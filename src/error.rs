@@ -19,3 +19,10 @@ impl OmmaErr {
     }
 }
 
+impl From<std::io::Error> for OmmaErr {
+    fn from(e: std::io::Error) -> Self {
+        OmmaErr {
+            body: e.to_string(),
+        }
+    }
+}

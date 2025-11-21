@@ -1,20 +1,9 @@
-use crate::err::OmmaErr;
-use std::io::{self, IsTerminal};
+use crate::error::OmmaErr;
+use std::io::{self, IsTerminal, Write};
 use std::os::fd::AsRawFd;
 
-pub struct Terminfo {
-    rows: u16,
-    cols: u16,
-}
-
-impl std::fmt::Display for Terminfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} by {}", self.rows, self.cols)
-    }
-}
-
 #[cfg(unix)]
-pub fn terminfo() -> Result<Terminfo, OmmaErr> {
+pub fn terminfo() -> Result<(u16, u16), OmmaErr> {
     let stdout = io::stdout();
     if !stdout.is_terminal() {
         return Err(OmmaErr::new("failed to open stdio, invalid terminal"));
@@ -50,10 +39,7 @@ pub fn terminfo() -> Result<Terminfo, OmmaErr> {
             ws.ws_row, ws.ws_col
         )));
     }
-    Ok(Terminfo {
-        rows: ws.ws_row,
-        cols: ws.ws_col,
-    })
+    Ok((ws.ws_row, ws.ws_col))
 }
 
 #[cfg(not(unix))]
@@ -61,4 +47,51 @@ pub fn terminfo() -> Result<Terminfo, Err> {
     return Err(OmmaErr::new(
         "terminfo is only compatible with *nix currently",
     ));
+}
+
+pub struct OmmaTerm {
+    row: u16,
+    col: u16,
+    max_row: u16,
+    max_col: u16,
+    stdout: io::Stdout,
+}
+
+impl std::fmt::Display for OmmaTerm {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{} by {}", self.max_row, self.max_col)
+    }
+}
+
+impl OmmaTerm {
+    pub fn new() -> Result<Self, OmmaErr> {
+        let (max_row, max_col) = terminfo()?;
+        Ok(OmmaTerm {
+            row: 0,
+            col: 0,
+            max_row,
+            max_col,
+            stdout: io::stdout(),
+        })
+    }
+
+    pub fn move_cursor(&mut self, row: u16, col: u16) -> Result<(), OmmaErr> {
+        if row > self.max_row || col > self.max_col {
+            return Err(OmmaErr::new(&format!(
+                "Invalid cursor move {}:{} (max {}:{})",
+                row, col, self.max_row, self.max_col
+            )));
+        }
+        self.row = row;
+        self.col = col;
+        print!("\x1b[{};{}H", row, col);
+        Ok(())
+    }
+
+    pub fn put_char_at(&mut self, row: u16, col: u16, ch: char) -> Result<(), OmmaErr> {
+        self.move_cursor(row, col)?;
+        write!(self.stdout, "{ch}")?;
+        self.stdout.flush()?;
+        Ok(())
+    }
 }

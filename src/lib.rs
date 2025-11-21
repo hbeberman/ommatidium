@@ -1,2 +1,2 @@
-pub mod err;
+pub mod error;
 pub mod term;
