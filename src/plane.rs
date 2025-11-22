@@ -1,4 +1,5 @@
 use crate::error::OmmaErr;
+use crate::term::OmmaTerm;
 use crate::window::*;
 
 #[allow(dead_code)]
@@ -20,6 +21,10 @@ impl Plane {
         self.id
     }
 
+    pub fn windows(&self) -> &Vec<Window> {
+        &self.windows
+    }
+
     pub fn windows_is_empty(&self) -> bool {
         self.windows.is_empty()
     }
@@ -32,8 +37,8 @@ impl Plane {
         Ok(id)
     }
 
-    pub fn find_window(&self, window_id: u32) -> Result<&Window, OmmaErr> {
-        match self.windows.iter().find(|w| w.id() == window_id) {
+    pub fn find_window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+        match self.windows.iter_mut().find(|w| w.id() == window_id) {
             Some(window) => Ok(window),
             None => Err(OmmaErr::new(&format!("window_id {} invalid", window_id))),
         }
@@ -44,5 +49,13 @@ impl Plane {
             Some(window) => Ok(window),
             None => Err(OmmaErr::new(&format!("window_id {} invalid", window_id))),
         }
+    }
+
+    pub fn blit(&mut self, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
+        let mut written = 0;
+        for window in self.windows().iter() {
+            written += window.blit(term)?;
+        }
+        Ok(written)
     }
 }

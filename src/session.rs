@@ -1,12 +1,13 @@
 use crate::error::OmmaErr;
 use crate::ommacell::OmmaCell;
 use crate::plane::*;
+use crate::term::OmmaTerm;
 use crate::window::*;
 
 #[allow(dead_code)]
-#[derive(Default)]
 pub struct Session {
     id: u32,
+    term: OmmaTerm,
     planes: Vec<Plane>,
 }
 
@@ -15,7 +16,15 @@ impl Session {
     pub fn new() -> Result<Self, OmmaErr> {
         let planes: Vec<Plane> = Vec::new();
         let id = crate::next_id()?;
-        Ok(Session { id, planes })
+        let term = OmmaTerm::new()?;
+        Ok(Session { id, term, planes })
+    }
+
+    pub fn new_for_tests() -> Result<Self, OmmaErr> {
+        let planes: Vec<Plane> = Vec::new();
+        let id = crate::next_id()?;
+        let term = OmmaTerm::new_mock(24, 80)?;
+        Ok(Session { id, term, planes })
     }
 
     pub fn id(&self) -> u32 {
@@ -57,9 +66,9 @@ impl Session {
         Ok(id)
     }
 
-    pub fn find_window(&self, window_id: u32) -> Result<&Window, OmmaErr> {
-        let mut found: Option<&Window> = None;
-        for plane in self.planes.iter() {
+    pub fn find_window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+        let mut found: Option<&mut Window> = None;
+        for plane in self.planes.iter_mut() {
             match plane.find_window(window_id) {
                 Ok(window) => {
                     if found.is_some() {
@@ -82,7 +91,7 @@ impl Session {
     pub fn find_window_mut(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
         let mut plane_index: Option<usize> = None;
 
-        for (idx, plane) in self.planes.iter().enumerate() {
+        for (idx, plane) in self.planes.iter_mut().enumerate() {
             if plane.find_window(window_id).is_ok() {
                 if plane_index.is_some() {
                     return Err(OmmaErr::new(&format!(
@@ -113,12 +122,34 @@ impl Session {
         ommacell: OmmaCell,
     ) -> Result<(), OmmaErr> {
         let window = self.find_window_mut(window_id)?;
-        window.set_ommacell(x, y, ommacell)?;
+        window.set_ommacell(x, y, &ommacell)?;
         Ok(())
     }
 
-    pub fn get_ommacell(&self, window_id: u32, x: u16, y: u16) -> Result<OmmaCell, OmmaErr> {
+    pub fn get_ommacell(&mut self, window_id: u32, x: u16, y: u16) -> Result<OmmaCell, OmmaErr> {
         let window = self.find_window(window_id)?;
         window.get_ommacell(x, y)
+    }
+
+    pub fn blit(&mut self) -> Result<u32, OmmaErr> {
+        let mut written = 0;
+        for plane in self.planes.iter_mut() {
+            written += plane.blit(&mut self.term)?;
+        }
+        Ok(written)
+    }
+
+    pub fn render(&mut self) -> Result<u32, OmmaErr> {
+        self.blit()?;
+        self.term.render()
+    }
+
+    pub fn read_key(&mut self) -> Result<Option<char>, OmmaErr> {
+        self.term.read_key()
+    }
+
+    pub fn fill_window(&mut self, window_id: u32, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+        let window = self.find_window(window_id)?;
+        window.fill_window(cell)
     }
 }

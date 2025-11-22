@@ -1,5 +1,6 @@
 use crate::error::OmmaErr;
 use crate::ommacell::*;
+use crate::term::OmmaTerm;
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]
@@ -43,32 +44,53 @@ impl Window {
         self.height
     }
 
-    pub fn set_ommacell(&mut self, x: u16, y: u16, ommacell: OmmaCell) -> Result<(), OmmaErr> {
-        if x > self.width || y > self.height {
+    pub fn set_ommacell(&mut self, x: u16, y: u16, ommacell: &OmmaCell) -> Result<(), OmmaErr> {
+        if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
                 "window_id {} invalid ommacell write to {}:{} (max {}:{})",
                 self.id,
                 x,
                 y,
-                self.x(),
-                self.y()
+                self.width(),
+                self.height()
             )));
         };
-        self.buffer[x as usize][y as usize] = ommacell;
+        self.buffer[x as usize][y as usize] = ommacell.clone();
         Ok(())
     }
 
     pub fn get_ommacell(&self, x: u16, y: u16) -> Result<OmmaCell, OmmaErr> {
-        if x > self.width || y > self.height {
+        if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
                 "window_id {} invalid ommacell read from {}:{} (max {}:{})",
                 self.id,
                 x,
                 y,
-                self.x(),
-                self.y()
+                self.width(),
+                self.height()
             )));
         };
         Ok(self.buffer[x as usize][y as usize].clone())
+    }
+
+    pub fn blit(&self, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
+        let mut written = 0;
+        for x in 0..self.width {
+            for y in 0..self.height {
+                written += 1;
+                term.put_cell_at(x + self.x, y + self.y, &self.buffer[x as usize][y as usize])?;
+            }
+        }
+        Ok(written)
+    }
+
+    pub fn fill_window(&mut self, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                self.buffer[x as usize][y as usize] = cell.clone();
+            }
+        }
+
+        Ok(self.width as u32 * self.height as u32)
     }
 }

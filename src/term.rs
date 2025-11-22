@@ -1,6 +1,89 @@
 use crate::error::OmmaErr;
-use std::io::{self, IsTerminal, Write};
-use std::os::fd::AsRawFd;
+use crate::ommacell::OmmaCell;
+use std::io::{self, IsTerminal, Read, Write};
+use std::mem::MaybeUninit;
+use std::os::fd::{AsRawFd, RawFd};
+
+type TcflagT = u32;
+type CcT = u8;
+type SpeedT = u32;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct Termios {
+    c_iflag: TcflagT,
+    c_oflag: TcflagT,
+    c_cflag: TcflagT,
+    c_lflag: TcflagT,
+    c_line: CcT,
+    c_cc: [CcT; 32],
+    c_ispeed: SpeedT,
+    c_ospeed: SpeedT,
+}
+
+unsafe extern "C" {
+    fn isatty(fd: i32) -> i32;
+    fn tcgetattr(fd: i32, termios_p: *mut Termios) -> i32;
+    fn tcsetattr(fd: i32, optional_actions: i32, termios_p: *const Termios) -> i32;
+    fn cfmakeraw(termios_p: *mut Termios);
+}
+
+#[allow(dead_code)]
+pub struct RawMode {
+    fd: RawFd,
+    orig: Option<Termios>,
+}
+
+impl RawMode {
+    pub fn set_stdin_raw() -> Result<Self, OmmaErr> {
+        let stdin = io::stdin();
+        let fd = stdin.as_raw_fd();
+        unsafe {
+            if isatty(fd) == 0 {
+                return Err(OmmaErr::new(&format!("stdin fd {} is not a terminal", fd)));
+            }
+
+            let mut tio = MaybeUninit::<Termios>::uninit();
+            if tcgetattr(fd, tio.as_mut_ptr()) != 0 {
+                return Err(OmmaErr::new(&format!(
+                    "stdin fd {} unable to tcgetattr",
+                    fd
+                )));
+            }
+            let mut tio = tio.assume_init();
+            let orig = tio;
+            cfmakeraw(&mut tio);
+
+            if tcsetattr(fd, 0, &tio as *const Termios) != 0 {
+                return Err(OmmaErr::new(&format!(
+                    "stdin fd {} unable to set raw mode",
+                    fd
+                )));
+            }
+
+            Ok(RawMode {
+                fd,
+                orig: Some(orig),
+            })
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn noop() -> Self {
+        // Used in tests to avoid touching the real TTY.
+        RawMode { fd: -1, orig: None }
+    }
+}
+
+impl Drop for RawMode {
+    fn drop(&mut self) {
+        if let Some(orig) = &self.orig {
+            unsafe {
+                let _ = tcsetattr(self.fd, 0, orig as *const Termios);
+            }
+        }
+    }
+}
 
 #[cfg(unix)]
 pub fn terminfo() -> Result<(u16, u16), OmmaErr> {
@@ -49,12 +132,16 @@ pub fn terminfo() -> Result<Terminfo, Err> {
     ));
 }
 
+#[allow(dead_code)]
 pub struct OmmaTerm {
     row: u16,
     col: u16,
     max_row: u16,
     max_col: u16,
     stdout: io::Stdout,
+    raw: RawMode,
+    front: Vec<Vec<OmmaCell>>,
+    back: Vec<Vec<OmmaCell>>,
 }
 
 impl std::fmt::Display for OmmaTerm {
@@ -66,32 +153,85 @@ impl std::fmt::Display for OmmaTerm {
 impl OmmaTerm {
     pub fn new() -> Result<Self, OmmaErr> {
         let (max_row, max_col) = terminfo()?;
+        let raw = RawMode::set_stdin_raw()?;
+        let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
+        let back = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         Ok(OmmaTerm {
             row: 0,
             col: 0,
             max_row,
             max_col,
             stdout: io::stdout(),
+            raw,
+            front,
+            back,
         })
     }
 
-    pub fn move_cursor(&mut self, row: u16, col: u16) -> Result<(), OmmaErr> {
-        if row > self.max_row || col > self.max_col {
+    #[allow(dead_code)]
+    pub fn new_mock(max_row: u16, max_col: u16) -> Result<Self, OmmaErr> {
+        let raw = RawMode::noop();
+        let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
+        let back = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
+        Ok(OmmaTerm {
+            row: 0,
+            col: 0,
+            max_row,
+            max_col,
+            stdout: io::stdout(),
+            raw,
+            front,
+            back,
+        })
+    }
+
+    pub fn move_cursor(&mut self, col: u16, row: u16) -> Result<(), OmmaErr> {
+        if row >= self.max_row || col >= self.max_col {
             return Err(OmmaErr::new(&format!(
                 "Invalid cursor move {}:{} (max {}:{})",
-                row, col, self.max_row, self.max_col
+                row,
+                col,
+                self.max_row - 1,
+                self.max_col - 1
             )));
         }
         self.row = row;
         self.col = col;
-        print!("\x1b[{};{}H", row, col);
+        // ANSI escape codes are 1-based; our buffers are 0-based.
+        print!("\x1b[{};{}H", row + 1, col + 1);
         Ok(())
     }
 
-    pub fn put_char_at(&mut self, row: u16, col: u16, ch: char) -> Result<(), OmmaErr> {
-        self.move_cursor(row, col)?;
-        write!(self.stdout, "{ch}")?;
-        self.stdout.flush()?;
+    pub fn put_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<(), OmmaErr> {
+        self.back[x as usize][y as usize] = cell.clone();
         Ok(())
+    }
+
+    pub fn render_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<(), OmmaErr> {
+        self.move_cursor(x, y)?;
+        write!(self.stdout, "{}", cell.ch)?;
+        Ok(())
+    }
+
+    pub fn render(&mut self) -> Result<u32, OmmaErr> {
+        let mut written = 0;
+        for x in 0..self.max_col {
+            for y in 0..self.max_row {
+                written += 1;
+                let cell = self.back[x as usize][y as usize].clone();
+                self.render_cell_at(x, y, &cell)?;
+            }
+        }
+        Ok(written)
+    }
+
+    pub fn read_key(&mut self) -> Result<Option<char>, OmmaErr> {
+        let mut buf = [0u8; 1];
+        let n = io::stdin().read(&mut buf)?;
+        if n == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(buf[0] as char))
+        }
     }
 }
