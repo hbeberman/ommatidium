@@ -1,5 +1,7 @@
+use crate::error::OmmaErr;
+
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Window {
     id: u32,
     y: u16,
@@ -10,15 +12,15 @@ pub struct Window {
 
 #[allow(dead_code)]
 impl Window {
-    pub fn new(y: u16, x: u16, height: u16, width: u16) -> Self {
-        let id = crate::next_id();
-        Window {
+    pub fn new(y: u16, x: u16, height: u16, width: u16) -> Result<Self, OmmaErr> {
+        let id = crate::next_id()?;
+        Ok(Window {
             id,
             y,
             x,
             height,
             width,
-        }
+        })
     }
 
     pub fn id(&self) -> u32 {

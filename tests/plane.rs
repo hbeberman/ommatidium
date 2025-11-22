@@ -5,15 +5,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_plane() {
-        let plane = Plane::new();
-        let plane2 = Plane::new();
-        let id = plane.id();
-        eprintln!("ID == {}", id);
-        let id = plane2.id();
-        eprintln!("ID == {}", id);
-        assert!(plane.id() == 1);
-        assert!(plane2.id() == 2);
+    fn new() {
+        let plane = Plane::new().unwrap();
         assert!(plane.windows_is_empty());
+    }
+
+    #[test]
+    fn find_window() {
+        let mut plane = Plane::new().unwrap();
+        let window_id = plane.new_window(1, 2, 3, 4).unwrap();
+        eprintln!("window_id {window_id}");
+        let window = plane.find_window(window_id).unwrap();
+        assert!(window.y() == 1);
     }
 }

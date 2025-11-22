@@ -4,10 +4,18 @@ pub mod session;
 pub mod term;
 pub mod window;
 
+use crate::error::OmmaErr;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-static NEXT_ID: AtomicU32 = AtomicU32::new(1);
+static ID: AtomicU32 = AtomicU32::new(1);
 
-pub fn next_id() -> u32 {
-    NEXT_ID.fetch_add(1, Ordering::Relaxed)
+pub fn next_id() -> Result<u32, OmmaErr> {
+    let current_id = ID.load(Ordering::Relaxed);
+    let id = ID.fetch_add(1, Ordering::Relaxed);
+    if current_id > id {
+        return Err(OmmaErr::new(
+            "ommatidium id tracker wrapped u32::MAX. Failed State.",
+        ));
+    }
+    Ok(id)
 }
