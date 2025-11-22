@@ -11,8 +11,9 @@ pub struct Window {
 #[allow(dead_code)]
 impl Window {
     pub fn new(y: u16, x: u16, height: u16, width: u16) -> Self {
+        let id = crate::next_id();
         Window {
-            id: 0,
+            id,
             y,
             x,
             height,
@@ -34,20 +35,5 @@ impl Window {
     }
     pub fn width(&self) -> u16 {
         self.width
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_window() {
-        let window = Window::new(1, 2, 3, 4);
-        assert!(window.id() == 0);
-        assert!(window.y() == 1);
-        assert!(window.x() == 2);
-        assert!(window.height() == 3);
-        assert!(window.width() == 4);
     }
 }

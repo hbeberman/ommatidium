@@ -11,22 +11,15 @@ pub struct Plane {
 impl Plane {
     pub fn new() -> Self {
         let windows: Vec<Window> = Vec::new();
-        Plane { id: 0, windows }
+        let id = crate::next_id();
+        Plane { id, windows }
     }
 
     pub fn id(&self) -> u32 {
         self.id
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_plane() {
-        let plane = Plane::new();
-        assert!(plane.id() == 0);
-        assert!(plane.windows.is_empty());
+    pub fn windows_is_empty(&self) -> bool {
+        self.windows.is_empty()
     }
 }
