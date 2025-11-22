@@ -1,4 +1,6 @@
 use ommatidium::error::OmmaErr;
+use ommatidium::ommacell::OmmaCell;
+use ommatidium::session::Session;
 use ommatidium::term::OmmaTerm;
 
 fn hello() -> Result<(), OmmaErr> {
@@ -10,6 +12,22 @@ fn hello() -> Result<(), OmmaErr> {
             term.put_char_at(y, x, '#')?;
         }
     }
+    let mut session = Session::new()?;
+    let plane_id = session.new_plane()?;
+    let window_id = session.new_window(plane_id, 0, 0, 10, 10)?;
+    session
+        .set_ommacell(
+            window_id,
+            3,
+            3,
+            OmmaCell {
+                ch: '@',
+                fg: 0,
+                bg: 0,
+                attrs: 0,
+            },
+        )
+        .unwrap();
     Ok(())
 }
 

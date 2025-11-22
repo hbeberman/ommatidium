@@ -16,6 +16,6 @@ mod tests {
         let window_id = plane.new_window(1, 2, 3, 4).unwrap();
         eprintln!("window_id {window_id}");
         let window = plane.find_window(window_id).unwrap();
-        assert!(window.y() == 1);
+        assert!(window.y() == 2);
     }
 }

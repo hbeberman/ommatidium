@@ -24,17 +24,24 @@ impl Plane {
         self.windows.is_empty()
     }
 
-    pub fn new_window(&mut self, y: u16, x: u16, height: u16, width: u16) -> Result<u32, OmmaErr> {
-        let window = Window::new(y, x, height, width)?;
+    pub fn new_window(&mut self, x: u16, y: u16, width: u16, height: u16) -> Result<u32, OmmaErr> {
+        let window = Window::new(x, y, width, height)?;
         let id = window.id();
 
         self.windows.push(window);
         Ok(id)
     }
 
-    pub fn find_window(&self, window_id: u32) -> Result<Window, OmmaErr> {
+    pub fn find_window(&self, window_id: u32) -> Result<&Window, OmmaErr> {
         match self.windows.iter().find(|w| w.id() == window_id) {
-            Some(window) => Ok(window.clone()),
+            Some(window) => Ok(window),
+            None => Err(OmmaErr::new(&format!("window_id {} invalid", window_id))),
+        }
+    }
+
+    pub fn find_window_mut(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+        match self.windows.iter_mut().find(|w| w.id() == window_id) {
+            Some(window) => Ok(window),
             None => Err(OmmaErr::new(&format!("window_id {} invalid", window_id))),
         }
     }

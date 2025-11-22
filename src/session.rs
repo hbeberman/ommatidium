@@ -1,4 +1,5 @@
 use crate::error::OmmaErr;
+use crate::ommacell::OmmaCell;
 use crate::plane::*;
 use crate::window::*;
 
@@ -42,41 +43,82 @@ impl Session {
     pub fn new_window(
         &mut self,
         plane_id: u32,
-        y: u16,
         x: u16,
-        height: u16,
+        y: u16,
         width: u16,
+        height: u16,
     ) -> Result<u32, OmmaErr> {
         let plane = match self.planes.iter_mut().find(|p| p.id() == plane_id) {
             Some(plane) => plane,
             None => return Err(OmmaErr::new(&format!("plane_id {} invalid", plane_id))),
         };
 
-        let id = plane.new_window(y, x, height, width)?;
+        let id = plane.new_window(x, y, width, height)?;
         Ok(id)
     }
 
-    pub fn find_window(&self, window_id: u32) -> Result<Window, OmmaErr> {
-        let mut windows = Vec::new();
+    pub fn find_window(&self, window_id: u32) -> Result<&Window, OmmaErr> {
+        let mut found: Option<&Window> = None;
         for plane in self.planes.iter() {
-            let window = plane.find_window(window_id)?;
-            windows.push(window);
+            match plane.find_window(window_id) {
+                Ok(window) => {
+                    if found.is_some() {
+                        return Err(OmmaErr::new(&format!(
+                            "window_id {} parented to multiple planes",
+                            window_id
+                        )));
+                    }
+                    found = Some(window);
+                }
+                Err(_) => continue,
+            }
         }
-        if windows.len() > 1 {
-            return Err(OmmaErr::new(&format!(
-                "window_id {} parented to multiple planes",
-                window_id
-            )));
+        match found {
+            Some(window) => Ok(window),
+            None => Err(OmmaErr::new(&format!("window_id {} not found", window_id))),
         }
-        if windows.is_empty() {
-            Err(OmmaErr::new(&format!("window_id {} not found", window_id)))
-        } else {
-            Ok(windows.into_iter().next().unwrap())
+    }
+
+    pub fn find_window_mut(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+        let mut plane_index: Option<usize> = None;
+
+        for (idx, plane) in self.planes.iter().enumerate() {
+            if plane.find_window(window_id).is_ok() {
+                if plane_index.is_some() {
+                    return Err(OmmaErr::new(&format!(
+                        "window_id {} parented to multiple planes",
+                        window_id
+                    )));
+                }
+                plane_index = Some(idx);
+            }
+        }
+
+        match plane_index {
+            Some(idx) => self.planes[idx].find_window_mut(window_id),
+            None => Err(OmmaErr::new(&format!("window_id {} not found", window_id))),
         }
     }
 
     pub fn windows_is_empty(&self, plane_id: u32) -> Result<bool, OmmaErr> {
         let plane = self.find_plane(plane_id)?;
         Ok(plane.windows_is_empty())
+    }
+
+    pub fn set_ommacell(
+        &mut self,
+        window_id: u32,
+        x: u16,
+        y: u16,
+        ommacell: OmmaCell,
+    ) -> Result<(), OmmaErr> {
+        let window = self.find_window_mut(window_id)?;
+        window.set_ommacell(x, y, ommacell)?;
+        Ok(())
+    }
+
+    pub fn get_ommacell(&self, window_id: u32, x: u16, y: u16) -> Result<OmmaCell, OmmaErr> {
+        let window = self.find_window(window_id)?;
+        window.get_ommacell(x, y)
     }
 }

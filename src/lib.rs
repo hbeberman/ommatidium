@@ -1,4 +1,5 @@
 pub mod error;
+pub mod ommacell;
 pub mod plane;
 pub mod session;
 pub mod term;
