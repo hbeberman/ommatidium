@@ -1,5 +1,5 @@
 use crate::error::OmmaErr;
-use crate::ommacell::OmmaCell;
+use crate::ommacell::{EMPTY, OmmaCell};
 use std::io::{self, IsTerminal, Read, Write};
 use std::mem::MaybeUninit;
 use std::os::fd::{AsRawFd, RawFd};
@@ -202,9 +202,14 @@ impl OmmaTerm {
         Ok(())
     }
 
-    pub fn put_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<(), OmmaErr> {
-        self.back[x as usize][y as usize] = cell.clone();
-        Ok(())
+    pub fn put_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+        match cell.ch {
+            EMPTY => Ok(0),
+            _ => {
+                self.back[x as usize][y as usize] = cell.clone();
+                Ok(1)
+            }
+        }
     }
 
     pub fn render_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<(), OmmaErr> {

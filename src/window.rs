@@ -17,7 +17,7 @@ pub struct Window {
 impl Window {
     pub fn new(x: u16, y: u16, width: u16, height: u16) -> Result<Self, OmmaErr> {
         let id = crate::next_id()?;
-        let buffer = vec![vec![OmmaCell::default(); height as usize]; width as usize];
+        let buffer = vec![vec![OmmaCell::transparent(); height as usize]; width as usize];
         Ok(Window {
             id,
             x,
@@ -77,8 +77,8 @@ impl Window {
         let mut written = 0;
         for x in 0..self.width {
             for y in 0..self.height {
-                written += 1;
-                term.put_cell_at(x + self.x, y + self.y, &self.buffer[x as usize][y as usize])?;
+                written +=
+                    term.put_cell_at(x + self.x, y + self.y, &self.buffer[x as usize][y as usize])?;
             }
         }
         Ok(written)
@@ -92,5 +92,36 @@ impl Window {
         }
 
         Ok(self.width as u32 * self.height as u32)
+    }
+
+    pub fn set_window_border(&mut self, cells: Vec<&OmmaCell>) -> Result<u32, OmmaErr> {
+        let max_width = self.width as usize - 1;
+        let max_height = self.height as usize - 1;
+        let (horiz, vert, corner) = match cells.len() {
+            1 => (cells[0], cells[0], cells[0]),
+            2 => (cells[0], cells[1], cells[0]),
+            3 => (cells[0], cells[1], cells[2]),
+            _ => {
+                return Err(OmmaErr::new(&format!(
+                    "invalid set_border vec length {}",
+                    cells.len()
+                )));
+            }
+        };
+        for x in 1..self.width - 1 {
+            self.buffer[x as usize][0_usize] = horiz.clone();
+            self.buffer[x as usize][max_height] = horiz.clone();
+        }
+
+        for y in 1..self.height - 1 {
+            self.buffer[0_usize][y as usize] = vert.clone();
+            self.buffer[max_width][y as usize] = vert.clone();
+        }
+        self.buffer[0_usize][0_usize] = corner.clone();
+        self.buffer[0_usize][max_height] = corner.clone();
+        self.buffer[max_width][0_usize] = corner.clone();
+        self.buffer[max_width][max_height] = corner.clone();
+
+        Ok(self.width as u32 * 2 + self.height as u32 * 2 - 4)
     }
 }

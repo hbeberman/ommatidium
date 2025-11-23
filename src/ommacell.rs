@@ -1,3 +1,5 @@
+pub const EMPTY: char = '\0';
+
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct OmmaCell {
@@ -16,5 +18,9 @@ impl Default for OmmaCell {
 impl OmmaCell {
     pub fn new(ch: char, fg: u8, bg: u8, attrs: u16) -> Self {
         OmmaCell { ch, fg, bg, attrs }
+    }
+
+    pub fn transparent() -> Self {
+        OmmaCell::new(EMPTY, 0, 0, 0)
     }
 }
