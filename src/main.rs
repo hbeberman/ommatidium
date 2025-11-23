@@ -57,9 +57,12 @@ fn hello() -> Result<(), OmmaErr> {
     let window_id3 = session.new_window(plane_id, 5, 5, 10, 10)?;
     session.set_window_border(window_id3, vec![&horiz, &vert, &corner])?;
 
-    let window_id4 = session.new_window(plane_id, 10, 3, 8, 4)?;
+    let window_id4 = session.new_window(plane_id, 11, 3, 20, 4)?;
     session.fill_window(window_id4, &blank)?;
     session.set_window_border(window_id4, vec![&special])?;
+    session.write_window_string(window_id4, 0, 0, &wall, "Hello Dungeon!".to_string())?;
+    session.write_window_string(window_id4, 0, 1, &wall, "Yes!".to_string())?;
+    session.write_window_string(window_id4, 6, 1, &wall, "No!".to_string())?;
 
     session.set_ommacell(
         window_id,

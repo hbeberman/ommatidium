@@ -10,6 +10,7 @@ pub struct Window {
     y: u16,
     width: u16,
     height: u16,
+    border: bool,
     buffer: Vec<Vec<OmmaCell>>,
 }
 
@@ -24,6 +25,7 @@ impl Window {
             y,
             width,
             height,
+            border: false,
             buffer,
         })
     }
@@ -122,6 +124,48 @@ impl Window {
         self.buffer[max_width][0_usize] = corner.clone();
         self.buffer[max_width][max_height] = corner.clone();
 
+        self.border = true;
+
         Ok(self.width as u32 * 2 + self.height as u32 * 2 - 4)
+    }
+
+    pub fn write_window_string(
+        &mut self,
+        x: u16,
+        y: u16,
+        cell: &OmmaCell,
+        string: String,
+    ) -> Result<u32, OmmaErr> {
+        let (mut x, y, max_width, max_height) = if self.border {
+            (
+                x + 1,
+                y + 1,
+                self.width as usize - 2,
+                self.height as usize - 2,
+            )
+        } else {
+            (x, y, self.width as usize - 1, self.height as usize - 1)
+        };
+
+        if x as usize + string.len() > max_width || y as usize > max_height {
+            return Err(OmmaErr::new(&format!(
+                "window_id {} invalid write_window_string {}:{} (max {}:{}) = {}",
+                self.id(),
+                x,
+                y,
+                max_width,
+                max_height,
+                string
+            )));
+        }
+
+        let mut cell = cell.clone();
+        for ch in string.chars() {
+            cell.ch = ch;
+            self.set_ommacell(x, y, &cell)?;
+            x += 1;
+        }
+
+        Ok(string.len() as u32)
     }
 }

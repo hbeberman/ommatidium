@@ -161,4 +161,16 @@ impl Session {
         let window = self.find_window(window_id)?;
         window.set_window_border(cell)
     }
+
+    pub fn write_window_string(
+        &mut self,
+        window_id: u32,
+        x: u16,
+        y: u16,
+        cell: &OmmaCell,
+        string: String,
+    ) -> Result<u32, OmmaErr> {
+        let window = self.find_window(window_id)?;
+        window.write_window_string(x, y, cell, string)
+    }
 }
