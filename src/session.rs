@@ -49,20 +49,23 @@ impl Session {
         }
     }
 
-    pub fn new_window(
-        &mut self,
-        plane_id: u32,
-        x: u16,
-        y: u16,
-        width: u16,
-        height: u16,
-    ) -> Result<u32, OmmaErr> {
-        let plane = match self.planes.iter_mut().find(|p| p.id() == plane_id) {
+    pub fn add_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
+        let plane = match self
+            .planes
+            .iter_mut()
+            .find(|p| p.id() == window.parent_id())
+        {
             Some(plane) => plane,
-            None => return Err(OmmaErr::new(&format!("plane_id {} invalid", plane_id))),
+            None => {
+                return Err(OmmaErr::new(&format!(
+                    "plane_id {} invalid",
+                    window.parent_id()
+                )));
+            }
         };
 
-        let id = plane.new_window(x, y, width, height)?;
+        let id = window.id();
+        plane.push_window(window);
         Ok(id)
     }
 
@@ -117,8 +120,8 @@ impl Session {
     pub fn set_ommacell(
         &mut self,
         window_id: u32,
-        x: u16,
-        y: u16,
+        x: usize,
+        y: usize,
         ommacell: OmmaCell,
     ) -> Result<(), OmmaErr> {
         let window = self.find_window_mut(window_id)?;
@@ -126,7 +129,12 @@ impl Session {
         Ok(())
     }
 
-    pub fn get_ommacell(&mut self, window_id: u32, x: u16, y: u16) -> Result<OmmaCell, OmmaErr> {
+    pub fn get_ommacell(
+        &mut self,
+        window_id: u32,
+        x: usize,
+        y: usize,
+    ) -> Result<OmmaCell, OmmaErr> {
         let window = self.find_window(window_id)?;
         window.get_ommacell(x, y)
     }
@@ -162,15 +170,15 @@ impl Session {
         window.set_window_border(cell)
     }
 
-    pub fn write_window_string(
+    pub fn window_string_raw(
         &mut self,
         window_id: u32,
-        x: u16,
-        y: u16,
+        x: usize,
+        y: usize,
         cell: &OmmaCell,
         string: String,
     ) -> Result<u32, OmmaErr> {
         let window = self.find_window(window_id)?;
-        window.write_window_string(x, y, cell, string)
+        window.window_string_raw(x, y, cell, string)
     }
 }

@@ -29,12 +29,8 @@ impl Plane {
         self.windows.is_empty()
     }
 
-    pub fn new_window(&mut self, x: u16, y: u16, width: u16, height: u16) -> Result<u32, OmmaErr> {
-        let window = Window::new(x, y, width, height)?;
-        let id = window.id();
-
+    pub fn push_window(&mut self, window: Window) {
         self.windows.push(window);
-        Ok(id)
     }
 
     pub fn find_window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {

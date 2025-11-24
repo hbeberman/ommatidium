@@ -188,7 +188,7 @@ impl OmmaTerm {
     pub fn move_cursor(&mut self, col: u16, row: u16) -> Result<(), OmmaErr> {
         if row >= self.max_row || col >= self.max_col {
             return Err(OmmaErr::new(&format!(
-                "Invalid cursor move {}:{} (max {}:{})",
+                "invalid cursor move {}:{} (max {}:{})",
                 row,
                 col,
                 self.max_row - 1,
@@ -202,11 +202,19 @@ impl OmmaTerm {
         Ok(())
     }
 
-    pub fn put_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+    pub fn put_cell_at(&mut self, x: usize, y: usize, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+        let y_max = self.back.len();
+        let x_max = self.back[y].len();
+        if x > x_max || y > y_max {
+            return Err(OmmaErr::new(&format!(
+                "invalid put cell at {}:{} (max {}:{})",
+                x, y, x_max, y_max,
+            )));
+        }
         match cell.ch {
             EMPTY => Ok(0),
             _ => {
-                self.back[x as usize][y as usize] = cell.clone();
+                self.back[x][y] = cell.clone();
                 Ok(1)
             }
         }
