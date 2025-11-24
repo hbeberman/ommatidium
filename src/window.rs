@@ -30,6 +30,7 @@ pub struct WindowBuilder {
     scroll_x: usize,
     scroll_y: usize,
     border: bool,
+    fill: Option<OmmaCell>,
 }
 
 impl WindowBuilder {
@@ -45,6 +46,7 @@ impl WindowBuilder {
             scroll_x: 0,
             scroll_y: 0,
             border: false,
+            fill: None,
         }
     }
 
@@ -61,26 +63,34 @@ impl WindowBuilder {
         self
     }
 
+    pub fn fill(mut self, fill: &OmmaCell) -> WindowBuilder {
+        self.fill = Some(fill.clone());
+        self
+    }
+
     pub fn build(self) -> Result<(u32, Window), OmmaErr> {
         let id = crate::next_id()?;
         let buffer = vec![vec![OmmaCell::transparent(); self.height]; self.width];
-        Ok((
+        let mut window = Window {
             id,
-            Window {
-                id,
-                parent_id: self.parent_id,
-                plane_x: self.plane_x,
-                plane_y: self.plane_y,
-                width: self.width,
-                height: self.height,
-                view_width: self.view_width,
-                view_height: self.view_height,
-                scroll_x: self.scroll_x,
-                scroll_y: self.scroll_y,
-                border: self.border,
-                buffer,
-            },
-        ))
+            parent_id: self.parent_id,
+            plane_x: self.plane_x,
+            plane_y: self.plane_y,
+            width: self.width,
+            height: self.height,
+            view_width: self.view_width,
+            view_height: self.view_height,
+            scroll_x: self.scroll_x,
+            scroll_y: self.scroll_y,
+            border: self.border,
+            buffer,
+        };
+
+        if let Some(fill) = self.fill {
+            window.fill(&fill);
+        }
+
+        Ok((id, window))
     }
 }
 
@@ -145,7 +155,7 @@ impl Window {
         Ok(written)
     }
 
-    pub fn fill_window(&mut self, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+    pub fn fill(&mut self, cell: &OmmaCell) -> Result<u32, OmmaErr> {
         for x in 0..self.width {
             for y in 0..self.height {
                 self.buffer[x][y] = cell.clone();

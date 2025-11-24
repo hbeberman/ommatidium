@@ -156,11 +156,6 @@ impl Session {
         self.term.read_key()
     }
 
-    pub fn fill_window(&mut self, window_id: u32, cell: &OmmaCell) -> Result<u32, OmmaErr> {
-        let window = self.find_window(window_id)?;
-        window.fill_window(cell)
-    }
-
     pub fn set_window_border(
         &mut self,
         window_id: u32,

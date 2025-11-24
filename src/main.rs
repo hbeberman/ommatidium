@@ -48,22 +48,28 @@ fn hello() -> Result<(), OmmaErr> {
     };
     let mut session = Session::new()?;
     let plane_id = session.new_plane()?;
-    let (id_world, window) = WindowBuilder::new(10, 10).plane(plane_id, 0, 0).build()?;
+    let (id_world, window) = WindowBuilder::new(10, 10)
+        .plane(plane_id, 0, 0)
+        .fill(&floor)
+        .build()?;
     session.add_window(window)?;
-    session.fill_window(id_world, &floor)?;
     session.set_window_border(id_world, vec![&wall])?;
 
-    let (id, window) = WindowBuilder::new(5, 5).plane(plane_id, 15, 0).build()?;
+    let (_, window) = WindowBuilder::new(5, 5)
+        .plane(plane_id, 15, 0)
+        .fill(&wall)
+        .build()?;
     session.add_window(window)?;
-    session.fill_window(id, &wall)?;
 
     let (id, window) = WindowBuilder::new(10, 10).plane(plane_id, 5, 5).build()?;
     session.add_window(window)?;
     session.set_window_border(id, vec![&horiz, &vert, &corner])?;
 
-    let (id, window) = WindowBuilder::new(20, 4).plane(plane_id, 11, 3).build()?;
+    let (id, window) = WindowBuilder::new(20, 4)
+        .plane(plane_id, 11, 3)
+        .fill(&blank)
+        .build()?;
     session.add_window(window)?;
-    session.fill_window(id, &blank)?;
     session.set_window_border(id, vec![&special])?;
     session.window_string_raw(id, 1, 0, &wall, "Hello Dungeon!".to_string())?;
     session.window_string_raw(id, 1, 1, &wall, "Yes!".to_string())?;
