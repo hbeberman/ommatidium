@@ -24,3 +24,10 @@ impl OmmaCell {
         OmmaCell::new(EMPTY, 0, 0, 0)
     }
 }
+
+pub const BLANK_CELL: OmmaCell = OmmaCell {
+    ch: ' ',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};

@@ -7,3 +7,6 @@
 - [ ] Add a mechanism for filters on windows (i.e. fog of war, tinting an entire window)
 - [ ] Add a concept of temporary animated windows
   - Too far? It could be neat for particle effect kindda stuff
+- [ ] Revisit how we're storing Windows, is hierarchical traversal fine or would we be better served by a singular session owned vec and a list child indexes?
+- [ ] Add a way for ommatidium to blit its own debug log as a topmost window
+- [ ] Add a "fit" window type that will just be the actual physical dimensions of the terminal

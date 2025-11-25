@@ -1,99 +1,70 @@
 use crate::error::OmmaErr;
-use crate::ommacell::OmmaCell;
-use crate::plane::*;
+use crate::ommacell::*;
 use crate::term::OmmaTerm;
 use crate::window::*;
 
 #[allow(dead_code)]
 pub struct Session {
-    id: u32,
     term: OmmaTerm,
-    planes: Vec<Plane>,
+    windows: Vec<Window>,
+    children: Vec<u32>,
 }
 
 #[allow(dead_code)]
 impl Session {
     pub fn new() -> Result<Self, OmmaErr> {
-        let planes: Vec<Plane> = Vec::new();
-        let id = crate::next_id()?;
-        let term = OmmaTerm::new()?;
-        Ok(Session { id, term, planes })
-    }
-
-    pub fn new_for_tests() -> Result<Self, OmmaErr> {
-        let planes: Vec<Plane> = Vec::new();
-        let id = crate::next_id()?;
-        let term = OmmaTerm::new_mock(24, 80)?;
-        Ok(Session { id, term, planes })
-    }
-
-    pub fn id(&self) -> u32 {
-        self.id
-    }
-
-    pub fn planes_is_empty(&self) -> bool {
-        self.planes.is_empty()
-    }
-
-    pub fn new_plane(&mut self) -> Result<u32, OmmaErr> {
-        let plane = Plane::new()?;
-        let id = plane.id();
-        self.planes.push(plane);
-        Ok(id)
-    }
-
-    pub fn find_plane(&self, plane_id: u32) -> Result<Plane, OmmaErr> {
-        match self.planes.iter().find(|p| p.id() == plane_id) {
-            Some(plane) => Ok(plane.clone()),
-            None => Err(OmmaErr::new(&format!("plane_id {} invalid", plane_id))),
+        if crate::current_id() != 0 {
+            return Err(OmmaErr::new(
+                "Session::new() may only be invoked once per executable lifetime",
+            ));
         }
+        let term = OmmaTerm::new()?;
+        let windows: Vec<Window> = Vec::new();
+        let children: Vec<u32> = Vec::new();
+
+        let mut session = Session {
+            term,
+            windows,
+            children,
+        };
+        // TODO: Implement cleaning our backplane better so this isnt necessary
+        session
+            .new_window(30, 30)
+            .name("Backdrop".to_string())
+            .fill(&BLANK_CELL)
+            .submit(&mut session)?;
+        Ok(session)
     }
 
-    pub fn add_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
-        let plane = match self
-            .planes
-            .iter_mut()
-            .find(|p| p.id() == window.parent_id())
-        {
-            Some(plane) => plane,
-            None => {
-                return Err(OmmaErr::new(&format!(
-                    "plane_id {} invalid",
-                    window.parent_id()
-                )));
-            }
-        };
+    pub fn new_window(&self, width: usize, height: usize) -> WindowBuilder {
+        WindowBuilder::new(width, height)
+    }
 
+    pub(crate) fn push_child(&mut self, child_id: u32) -> Result<(), OmmaErr> {
+        // TODO: Make sure child ID has never been used before
+        self.children.push(child_id);
+        Ok(())
+    }
+
+    //    pub fn fn_window(&mut self, window_id: u32) -> Result<(u32, Vec<u32>), OmmaErr> {}
+
+    pub(crate) fn push_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
         let id = window.id();
-        plane.push_window(window);
+        self.windows.push(window);
         Ok(id)
     }
 
     pub fn window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
-        let mut found: Option<&mut Window> = None;
-        for plane in self.planes.iter_mut() {
-            match plane.find_window(window_id) {
-                Ok(window) => {
-                    if found.is_some() {
-                        return Err(OmmaErr::new(&format!(
-                            "window_id {} parented to multiple planes",
-                            window_id
-                        )));
-                    }
-                    found = Some(window);
-                }
-                Err(_) => continue,
-            }
+        let id = window_id as usize;
+        if id < self.windows.len() {
+            Ok(&mut self.windows[id])
+        } else {
+            Err(OmmaErr::new(&format!(
+                "invalid window_id {}, max is {}",
+                window_id,
+                self.windows.len() - 1,
+            )))
         }
-        match found {
-            Some(window) => Ok(window),
-            None => Err(OmmaErr::new(&format!("window_id {} not found", window_id))),
-        }
-    }
-
-    pub fn windows_is_empty(&self, plane_id: u32) -> Result<bool, OmmaErr> {
-        let plane = self.find_plane(plane_id)?;
-        Ok(plane.windows_is_empty())
     }
 
     pub fn set_ommacell(
@@ -120,8 +91,17 @@ impl Session {
 
     pub fn blit(&mut self) -> Result<u32, OmmaErr> {
         let mut written = 0;
-        for plane in self.planes.iter_mut() {
-            written += plane.blit(&mut self.term)?;
+        let Self {
+            children,
+            term,
+            windows,
+            ..
+        } = self;
+        for &index in children.iter() {
+            let window = windows
+                .get_mut(index as usize)
+                .ok_or_else(|| OmmaErr::new(&format!("invalid child index {}", index)))?;
+            written += window.blit(term)?;
         }
         Ok(written)
     }

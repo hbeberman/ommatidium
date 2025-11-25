@@ -1,5 +1,6 @@
 use crate::error::OmmaErr;
 use crate::ommacell::*;
+use crate::session::Session;
 use crate::term::OmmaTerm;
 
 #[allow(dead_code)]
@@ -8,8 +9,8 @@ pub struct Window {
     id: u32,
     parent_id: u32,
     name: String,
-    plane_x: usize,
-    plane_y: usize,
+    offset_x: usize,
+    offset_y: usize,
     width: usize,
     height: usize,
     view_width: usize,
@@ -24,8 +25,8 @@ pub struct Window {
 pub struct WindowBuilder {
     parent_id: u32,
     name: Option<String>,
-    plane_x: usize,
-    plane_y: usize,
+    offset_x: usize,
+    offset_y: usize,
     width: usize,
     height: usize,
     view_width: usize,
@@ -42,8 +43,8 @@ impl WindowBuilder {
         WindowBuilder {
             parent_id: 0,
             name: None,
-            plane_x: 0,
-            plane_y: 0,
+            offset_x: 0,
+            offset_y: 0,
             width,
             height,
             view_width: width,
@@ -62,10 +63,14 @@ impl WindowBuilder {
         self
     }
 
-    pub fn plane(mut self, parent_id: u32, plane_x: usize, plane_y: usize) -> WindowBuilder {
+    pub fn parent(mut self, parent_id: u32) -> WindowBuilder {
         self.parent_id = parent_id;
-        self.plane_x = plane_x;
-        self.plane_y = plane_y;
+        self
+    }
+
+    pub fn offset(mut self, offset_x: usize, offset_y: usize) -> WindowBuilder {
+        self.offset_x = offset_x;
+        self.offset_y = offset_y;
         self
     }
 
@@ -84,7 +89,7 @@ impl WindowBuilder {
         self
     }
 
-    pub fn build(self) -> Result<(u32, Window), OmmaErr> {
+    pub fn submit(self, session: &mut Session) -> Result<u32, OmmaErr> {
         let id = crate::next_id()?;
         let buffer = vec![vec![OmmaCell::transparent(); self.height]; self.width];
         let name = if let Some(name) = self.name {
@@ -97,8 +102,8 @@ impl WindowBuilder {
             id,
             name,
             parent_id: self.parent_id,
-            plane_x: self.plane_x,
-            plane_y: self.plane_y,
+            offset_x: self.offset_x,
+            offset_y: self.offset_y,
             width: self.width,
             height: self.height,
             view_width: self.view_width,
@@ -114,7 +119,17 @@ impl WindowBuilder {
             let _ = window.fill(&fill);
         }
 
-        Ok((id, window))
+        let id = session.push_window(window)?;
+
+        if self.parent_id != 0 {
+            return Err(OmmaErr::new(
+                "TODO: WindowBuilder attempted to bind to non-session parent",
+            ));
+        } else {
+            session.push_child(id)?;
+        }
+
+        Ok(id)
     }
 }
 
@@ -133,11 +148,11 @@ impl Window {
     pub fn parent_id(&self) -> u32 {
         self.parent_id
     }
-    pub fn plane_x(&self) -> usize {
-        self.plane_x
+    pub fn offset_x(&self) -> usize {
+        self.offset_x
     }
-    pub fn plane_y(&self) -> usize {
-        self.plane_y
+    pub fn offset_y(&self) -> usize {
+        self.offset_y
     }
     pub fn view_width(&self) -> usize {
         self.view_width
@@ -199,7 +214,7 @@ impl Window {
         for x in 0..self.view_width {
             for y in 0..self.view_height {
                 written +=
-                    term.put_cell_at(x + self.plane_x, y + self.plane_y, &self.buffer[x][y])?;
+                    term.put_cell_at(x + self.offset_x, y + self.offset_y, &self.buffer[x][y])?;
             }
         }
         Ok(written)

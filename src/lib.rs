@@ -1,6 +1,5 @@
 pub mod error;
 pub mod ommacell;
-pub mod plane;
 pub mod session;
 pub mod term;
 pub mod window;
@@ -8,7 +7,7 @@ pub mod window;
 use crate::error::OmmaErr;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-static ID: AtomicU32 = AtomicU32::new(1);
+static ID: AtomicU32 = AtomicU32::new(0);
 
 pub fn next_id() -> Result<u32, OmmaErr> {
     let current_id = ID.load(Ordering::Relaxed);
@@ -19,4 +18,8 @@ pub fn next_id() -> Result<u32, OmmaErr> {
         ));
     }
     Ok(id)
+}
+
+pub fn current_id() -> u32 {
+    ID.load(Ordering::Relaxed)
 }
