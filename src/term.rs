@@ -150,18 +150,28 @@ impl std::fmt::Display for OmmaTerm {
     }
 }
 
+impl Drop for OmmaTerm {
+    fn drop(&mut self) {
+        let _ = write!(self.stdout, "\x1b[?25h");
+        let _ = self.stdout.flush();
+    }
+}
+
 impl OmmaTerm {
     pub fn new() -> Result<Self, OmmaErr> {
         let (max_row, max_col) = terminfo()?;
         let raw = RawMode::set_stdin_raw()?;
         let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         let back = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
+        let mut stdout = io::stdout();
+        write!(stdout, "\x1b[?25l")?;
+        stdout.flush()?;
         Ok(OmmaTerm {
             row: 0,
             col: 0,
             max_row,
             max_col,
-            stdout: io::stdout(),
+            stdout,
             raw,
             front,
             back,

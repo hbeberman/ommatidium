@@ -7,6 +7,7 @@ use crate::term::OmmaTerm;
 pub struct Window {
     id: u32,
     parent_id: u32,
+    name: String,
     plane_x: usize,
     plane_y: usize,
     width: usize,
@@ -16,11 +17,13 @@ pub struct Window {
     scroll_x: usize,
     scroll_y: usize,
     border: bool,
+    hidden: bool,
     buffer: Vec<Vec<OmmaCell>>,
 }
 
 pub struct WindowBuilder {
     parent_id: u32,
+    name: Option<String>,
     plane_x: usize,
     plane_y: usize,
     width: usize,
@@ -30,6 +33,7 @@ pub struct WindowBuilder {
     scroll_x: usize,
     scroll_y: usize,
     border: bool,
+    hidden: bool,
     fill: Option<OmmaCell>,
 }
 
@@ -37,6 +41,7 @@ impl WindowBuilder {
     pub fn new(width: usize, height: usize) -> WindowBuilder {
         WindowBuilder {
             parent_id: 0,
+            name: None,
             plane_x: 0,
             plane_y: 0,
             width,
@@ -46,6 +51,7 @@ impl WindowBuilder {
             scroll_x: 0,
             scroll_y: 0,
             border: false,
+            hidden: false,
             fill: None,
         }
     }
@@ -68,11 +74,28 @@ impl WindowBuilder {
         self
     }
 
+    pub fn name(mut self, name: String) -> WindowBuilder {
+        self.name = Some(name);
+        self
+    }
+
+    pub fn hidden(mut self) -> WindowBuilder {
+        self.hidden = true;
+        self
+    }
+
     pub fn build(self) -> Result<(u32, Window), OmmaErr> {
         let id = crate::next_id()?;
         let buffer = vec![vec![OmmaCell::transparent(); self.height]; self.width];
+        let name = if let Some(name) = self.name {
+            name
+        } else {
+            format!("Unnamed Window #{}", id)
+        };
+
         let mut window = Window {
             id,
+            name,
             parent_id: self.parent_id,
             plane_x: self.plane_x,
             plane_y: self.plane_y,
@@ -83,14 +106,22 @@ impl WindowBuilder {
             scroll_x: self.scroll_x,
             scroll_y: self.scroll_y,
             border: self.border,
+            hidden: self.hidden,
             buffer,
         };
 
         if let Some(fill) = self.fill {
-            window.fill(&fill);
+            let _ = window.fill(&fill);
         }
 
         Ok((id, window))
+    }
+}
+
+impl std::fmt::Display for Window {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let visibility = if self.hidden { "H" } else { "V" };
+        write!(f, "{}:{}:{}", visibility, self.id, self.name)
     }
 }
 
@@ -113,6 +144,22 @@ impl Window {
     }
     pub fn view_height(&self) -> usize {
         self.view_height
+    }
+
+    pub fn is_hidden(&self) -> bool {
+        self.hidden
+    }
+
+    pub fn toggle_hidden(&mut self) {
+        self.hidden = !self.hidden;
+    }
+
+    pub fn set_hidden(&mut self) {
+        self.hidden = true
+    }
+
+    pub fn clear_hidden(&mut self) {
+        self.hidden = false
     }
 
     pub fn set_ommacell(&mut self, x: usize, y: usize, ommacell: &OmmaCell) -> Result<(), OmmaErr> {
@@ -145,6 +192,9 @@ impl Window {
     }
 
     pub fn blit(&self, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
+        if self.hidden {
+            return Ok(0);
+        }
         let mut written = 0;
         for x in 0..self.view_width {
             for y in 0..self.view_height {
@@ -166,7 +216,7 @@ impl Window {
     }
 
     // TODO: Fix this to stash border info into Window then only apply it when blitting
-    pub fn set_window_border(&mut self, cells: Vec<&OmmaCell>) -> Result<u32, OmmaErr> {
+    pub fn set_border(&mut self, cells: Vec<&OmmaCell>) -> Result<u32, OmmaErr> {
         let max_width = self.view_width - 1;
         let max_height = self.view_height - 1;
         let (horiz, vert, corner) = match cells.len() {

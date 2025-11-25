@@ -69,7 +69,7 @@ impl Session {
         Ok(id)
     }
 
-    pub fn find_window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+    pub fn window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
         let mut found: Option<&mut Window> = None;
         for plane in self.planes.iter_mut() {
             match plane.find_window(window_id) {
@@ -91,27 +91,6 @@ impl Session {
         }
     }
 
-    pub fn find_window_mut(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
-        let mut plane_index: Option<usize> = None;
-
-        for (idx, plane) in self.planes.iter_mut().enumerate() {
-            if plane.find_window(window_id).is_ok() {
-                if plane_index.is_some() {
-                    return Err(OmmaErr::new(&format!(
-                        "window_id {} parented to multiple planes",
-                        window_id
-                    )));
-                }
-                plane_index = Some(idx);
-            }
-        }
-
-        match plane_index {
-            Some(idx) => self.planes[idx].find_window_mut(window_id),
-            None => Err(OmmaErr::new(&format!("window_id {} not found", window_id))),
-        }
-    }
-
     pub fn windows_is_empty(&self, plane_id: u32) -> Result<bool, OmmaErr> {
         let plane = self.find_plane(plane_id)?;
         Ok(plane.windows_is_empty())
@@ -124,7 +103,7 @@ impl Session {
         y: usize,
         ommacell: OmmaCell,
     ) -> Result<(), OmmaErr> {
-        let window = self.find_window_mut(window_id)?;
+        let window = self.window(window_id)?;
         window.set_ommacell(x, y, &ommacell)?;
         Ok(())
     }
@@ -135,7 +114,7 @@ impl Session {
         x: usize,
         y: usize,
     ) -> Result<OmmaCell, OmmaErr> {
-        let window = self.find_window(window_id)?;
+        let window = self.window(window_id)?;
         window.get_ommacell(x, y)
     }
 
@@ -161,8 +140,8 @@ impl Session {
         window_id: u32,
         cell: Vec<&OmmaCell>,
     ) -> Result<u32, OmmaErr> {
-        let window = self.find_window(window_id)?;
-        window.set_window_border(cell)
+        let window = self.window(window_id)?;
+        window.set_border(cell)
     }
 
     pub fn window_string_raw(
@@ -173,7 +152,7 @@ impl Session {
         cell: &OmmaCell,
         string: String,
     ) -> Result<u32, OmmaErr> {
-        let window = self.find_window(window_id)?;
+        let window = self.window(window_id)?;
         window.window_string_raw(x, y, cell, string)
     }
 }
