@@ -232,15 +232,25 @@ impl Window {
         Ok(self.buffer[x][y].clone())
     }
 
-    pub fn blit(&self, windows: &Vec<Window>, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
+    pub fn blit(
+        &self,
+        windows: &Vec<Window>,
+        term: &mut OmmaTerm,
+        parent_offset_x: usize,
+        parent_offset_y: usize,
+    ) -> Result<u32, OmmaErr> {
         if self.hidden {
             return Ok(0);
         }
+        let offset_x = self.offset_x + parent_offset_x;
+        let offset_y = self.offset_y + parent_offset_y;
         let mut written = 0;
-        for x in 0..self.view_width {
-            for y in 0..self.view_height {
-                written +=
-                    term.put_cell_at(x + self.offset_x, y + self.offset_y, &self.buffer[x][y])?;
+        // Skip drawing virtual window contents
+        if !self.virt {
+            for x in 0..self.view_width {
+                for y in 0..self.view_height {
+                    written += term.put_cell_at(x + offset_x, y + offset_y, &self.buffer[x][y])?;
+                }
             }
         }
         for window_id in &self.children {
@@ -254,7 +264,7 @@ impl Window {
                     )));
                 }
             }
-            written += windows[*window_id as usize].blit(windows, term)?;
+            written += windows[*window_id as usize].blit(windows, term, offset_x, offset_y)?;
         }
         Ok(written)
     }

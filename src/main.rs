@@ -89,13 +89,27 @@ fn hello() -> Result<(), OmmaErr> {
         .hidden()
         .submit(&mut session)?;
 
+    let id_temp = WindowBuilder::new(5, 5)
+        .offset(10, 3)
+        .parent(id_block)
+        .fill(&floor)
+        .submit(&mut session)?;
+
+    let id_player = WindowBuilder::new(1, 1)
+        .offset(3, 3)
+        .parent(id_temp)
+        .fill(&player)
+        .submit(&mut session)?;
+
     session.window(id_world)?.set_ommacell(3, 3, &player)?;
     loop {
         session.render()?;
         if let Some(key) = session.read_key()? {
             match key {
                 'S' => break,
+                'p' => session.window(id_player)?.toggle_hidden(),
                 'h' => session.window(id_block)?.toggle_hidden(),
+                't' => session.window(id_temp)?.toggle_hidden(),
                 '\x03' => break,
                 _ => continue,
             }

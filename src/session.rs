@@ -109,7 +109,7 @@ impl Session {
     pub fn render(&mut self) -> Result<u32, OmmaErr> {
         let Self { term, windows, .. } = self;
         let window = &windows[0];
-        window.blit(windows, term)?;
+        window.blit(windows, term, 0, 0)?;
         self.term.render()
     }
 
