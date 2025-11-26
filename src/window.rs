@@ -321,7 +321,7 @@ impl Window {
         Ok(self.view_width as u32 * 2 + self.view_height as u32 * 2 - 4)
     }
 
-    pub fn window_string_raw(
+    pub fn string_raw(
         &mut self,
         x: usize,
         y: usize,
