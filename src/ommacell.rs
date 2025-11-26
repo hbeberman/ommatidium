@@ -37,3 +37,52 @@ pub const BLANK_CELL: OmmaCell = OmmaCell {
     bg: 0,
     attrs: 0,
 };
+
+pub const PLAYER_CELL: OmmaCell = OmmaCell {
+    ch: '@',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const FLOOR_CELL: OmmaCell = OmmaCell {
+    ch: '.',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const WALL_CELL: OmmaCell = OmmaCell {
+    ch: '#',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const HORIZ_CELL: OmmaCell = OmmaCell {
+    ch: '-',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const VERT_CELL: OmmaCell = OmmaCell {
+    ch: '|',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const CORNER_CELL: OmmaCell = OmmaCell {
+    ch: 'O',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
+pub const SPECIAL_CELL: OmmaCell = OmmaCell {
+    ch: '*',
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};

@@ -106,6 +106,7 @@ impl Session {
 #[test]
 fn new() -> Result<(), OmmaErr> {
     let session = Session::new_headless(50, 50)?;
+    // Ensure we always have our Session Window
     assert!(session.windows.len() == 1);
     Ok(())
 }
