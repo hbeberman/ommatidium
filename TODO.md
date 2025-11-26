@@ -4,9 +4,13 @@
 - [ ] Implement window internal padding logic - reusable padding struct to hold internally?
 - [ ] Ponder how deep the responsibility of state management should go in this library
   - Does it make sense to store menus and answer values logically instead of as raw character data?
-- [ ] Add a mechanism for filters on windows (i.e. fog of war, tinting an entire window)
+- [ ] Add a mechanism for filters on windows
+  - Fog of War
+  - Tinting
+  - Alpha Masking
 - [ ] Add a concept of temporary animated windows
   - Too far? It could be neat for particle effect kindda stuff
 - [ ] Revisit how we're storing Windows, is hierarchical traversal fine or would we be better served by a singular session owned vec and a list child indexes?
 - [ ] Add a way for ommatidium to blit its own debug log as a topmost window
 - [ ] Add a "fit" window type that will just be the actual physical dimensions of the terminal
+- [ ] Figure out a way to run closures or functions on all descendants of a node

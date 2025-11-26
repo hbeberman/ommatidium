@@ -8,6 +8,7 @@ use crate::term::OmmaTerm;
 pub struct Window {
     id: u32,
     parent_id: u32,
+    children: Vec<u32>,
     name: String,
     offset_x: usize,
     offset_y: usize,
@@ -19,6 +20,7 @@ pub struct Window {
     scroll_y: usize,
     border: bool,
     hidden: bool,
+    virt: bool,
     buffer: Vec<Vec<OmmaCell>>,
 }
 
@@ -35,6 +37,7 @@ pub struct WindowBuilder {
     scroll_y: usize,
     border: bool,
     hidden: bool,
+    virt: bool,
     fill: Option<OmmaCell>,
 }
 
@@ -53,6 +56,7 @@ impl WindowBuilder {
             scroll_y: 0,
             border: false,
             hidden: false,
+            virt: false,
             fill: None,
         }
     }
@@ -89,19 +93,26 @@ impl WindowBuilder {
         self
     }
 
-    pub fn submit(self, session: &mut Session) -> Result<u32, OmmaErr> {
+    pub fn virt(mut self) -> WindowBuilder {
+        self.virt = true;
+        self
+    }
+
+    /// submit WindowBuilder into the session as a new window, returns window id
+    pub fn submit(&self, session: &mut Session) -> Result<u32, OmmaErr> {
         let id = crate::next_id()?;
         let buffer = vec![vec![OmmaCell::transparent(); self.height]; self.width];
-        let name = if let Some(name) = self.name {
+        let name = if let Some(name) = &self.name {
             name
         } else {
-            format!("Unnamed Window #{}", id)
+            &format!("Unnamed Window #{}", id)
         };
 
         let mut window = Window {
             id,
-            name,
+            name: name.to_string(),
             parent_id: self.parent_id,
+            children: Vec::<u32>::new(),
             offset_x: self.offset_x,
             offset_y: self.offset_y,
             width: self.width,
@@ -112,22 +123,15 @@ impl WindowBuilder {
             scroll_y: self.scroll_y,
             border: self.border,
             hidden: self.hidden,
+            virt: self.virt,
             buffer,
         };
 
-        if let Some(fill) = self.fill {
-            let _ = window.fill(&fill);
+        if let Some(fill) = &self.fill {
+            let _ = window.fill(fill);
         }
 
-        let id = session.push_window(window)?;
-
-        if self.parent_id != 0 {
-            return Err(OmmaErr::new(
-                "TODO: WindowBuilder attempted to bind to non-session parent",
-            ));
-        } else {
-            session.push_child(id)?;
-        }
+        let id = session.register_window(window)?;
 
         Ok(id)
     }
@@ -145,18 +149,23 @@ impl Window {
     pub fn id(&self) -> u32 {
         self.id
     }
+
     pub fn parent_id(&self) -> u32 {
         self.parent_id
     }
+
     pub fn offset_x(&self) -> usize {
         self.offset_x
     }
+
     pub fn offset_y(&self) -> usize {
         self.offset_y
     }
+
     pub fn view_width(&self) -> usize {
         self.view_width
     }
+
     pub fn view_height(&self) -> usize {
         self.view_height
     }
@@ -177,6 +186,23 @@ impl Window {
         self.hidden = false
     }
 
+    pub(crate) fn add_child(&mut self, child_id: u32) {
+        self.children.push(child_id);
+    }
+
+    pub(crate) fn remove_child(&mut self, child_id: u32) -> Result<(), OmmaErr> {
+        if let Some(index) = self.children.iter().position(|x| *x == child_id) {
+            self.children.remove(index);
+        } else {
+            return Err(OmmaErr::new(&format!(
+                "error removing window {} from parent {}, not owned",
+                child_id,
+                self.id(),
+            )));
+        }
+        Ok(())
+    }
+
     pub fn set_ommacell(&mut self, x: usize, y: usize, ommacell: &OmmaCell) -> Result<(), OmmaErr> {
         if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
@@ -193,7 +219,7 @@ impl Window {
     }
 
     pub fn get_ommacell(&self, x: usize, y: usize) -> Result<OmmaCell, OmmaErr> {
-        if x >= self.height || y >= self.height {
+        if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
                 "window_id {} invalid ommacell read from {}:{} (max {}:{})",
                 self.id,
@@ -206,7 +232,7 @@ impl Window {
         Ok(self.buffer[x][y].clone())
     }
 
-    pub fn blit(&self, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
+    pub fn blit(&self, windows: &Vec<Window>, term: &mut OmmaTerm) -> Result<u32, OmmaErr> {
         if self.hidden {
             return Ok(0);
         }
@@ -216,6 +242,19 @@ impl Window {
                 written +=
                     term.put_cell_at(x + self.offset_x, y + self.offset_y, &self.buffer[x][y])?;
             }
+        }
+        for window_id in &self.children {
+            if &self.id() == window_id {
+                if window_id == &0 {
+                    continue;
+                } else {
+                    return Err(OmmaErr::new(&format!(
+                        "failed to blit window {} due to self own",
+                        self.id(),
+                    )));
+                }
+            }
+            written += windows[*window_id as usize].blit(windows, term)?;
         }
         Ok(written)
     }

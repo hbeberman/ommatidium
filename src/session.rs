@@ -13,12 +13,26 @@ pub struct Session {
 #[allow(dead_code)]
 impl Session {
     pub fn new() -> Result<Self, OmmaErr> {
+        let term = OmmaTerm::new()?;
+        Session::new_inner(term)
+    }
+
+    pub fn new_headless(max_row: u16, max_col: u16) -> Result<Self, OmmaErr> {
+        let term = OmmaTerm::new_mock(max_row, max_col)?;
+        Session::new_inner(term)
+    }
+
+    pub fn default_headless() -> Result<Self, OmmaErr> {
+        let term = OmmaTerm::new_mock(50, 50)?;
+        Session::new_inner(term)
+    }
+
+    fn new_inner(term: OmmaTerm) -> Result<Self, OmmaErr> {
         if crate::current_id() != 0 {
             return Err(OmmaErr::new(
                 "Session::new() may only be invoked once per executable lifetime",
             ));
         }
-        let term = OmmaTerm::new()?;
         let windows: Vec<Window> = Vec::new();
         let children: Vec<u32> = Vec::new();
 
@@ -27,11 +41,11 @@ impl Session {
             windows,
             children,
         };
-        // TODO: Implement cleaning our backplane better so this isnt necessary
+        // Reserve window id 0 with a valid window
         session
             .new_window(30, 30)
             .name("Backdrop".to_string())
-            .fill(&BLANK_CELL)
+            .virt()
             .submit(&mut session)?;
         Ok(session)
     }
@@ -40,17 +54,19 @@ impl Session {
         WindowBuilder::new(width, height)
     }
 
-    pub(crate) fn push_child(&mut self, child_id: u32) -> Result<(), OmmaErr> {
-        // TODO: Make sure child ID has never been used before
-        self.children.push(child_id);
-        Ok(())
+    /// submit WindowBuilder into the session as a new window, returns window id
+    pub fn submit(&mut self, windowbuilder: WindowBuilder) -> Result<u32, OmmaErr> {
+        windowbuilder.submit(self)
     }
 
-    //    pub fn fn_window(&mut self, window_id: u32) -> Result<(u32, Vec<u32>), OmmaErr> {}
+    // pub fn fn_window(&mut self, window_id: u32) -> Result<(u32, Vec<u32>), OmmaErr> {}
 
-    pub(crate) fn push_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
+    pub(crate) fn register_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
         let id = window.id();
+        let parent = window.parent_id();
         self.windows.push(window);
+        let parent_window = self.window(parent)?;
+        parent_window.add_child(id);
         Ok(id)
     }
 
@@ -89,25 +105,11 @@ impl Session {
         window.get_ommacell(x, y)
     }
 
-    pub fn blit(&mut self) -> Result<u32, OmmaErr> {
-        let mut written = 0;
-        let Self {
-            children,
-            term,
-            windows,
-            ..
-        } = self;
-        for &index in children.iter() {
-            let window = windows
-                .get_mut(index as usize)
-                .ok_or_else(|| OmmaErr::new(&format!("invalid child index {}", index)))?;
-            written += window.blit(term)?;
-        }
-        Ok(written)
-    }
-
+    /// render draws the current state of the session to the terminal
     pub fn render(&mut self) -> Result<u32, OmmaErr> {
-        self.blit()?;
+        let Self { term, windows, .. } = self;
+        let window = &windows[0];
+        window.blit(windows, term)?;
         self.term.render()
     }
 
@@ -135,4 +137,11 @@ impl Session {
         let window = self.window(window_id)?;
         window.window_string_raw(x, y, cell, string)
     }
+}
+
+#[test]
+fn new() -> Result<(), OmmaErr> {
+    let session = Session::new_headless(50, 50)?;
+    assert!(session.windows.len() == 1);
+    Ok(())
 }
