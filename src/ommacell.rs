@@ -25,6 +25,12 @@ impl OmmaCell {
     }
 }
 
+#[test]
+fn new() {
+    let ommacell = OmmaCell::new(' ', 0, 0, 0);
+    assert!(ommacell.ch == ' ');
+}
+
 pub const BLANK_CELL: OmmaCell = OmmaCell {
     ch: ' ',
     fg: 0,

@@ -162,6 +162,14 @@ impl Window {
         self.offset_y
     }
 
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
     pub fn view_width(&self) -> usize {
         self.view_width
     }
