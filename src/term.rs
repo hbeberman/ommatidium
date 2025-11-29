@@ -61,6 +61,9 @@ impl RawMode {
                 )));
             }
 
+            // send smcup escape to enter alternative screen buffer.
+            print!("\x1b[?1049h");
+
             Ok(RawMode {
                 fd,
                 orig: Some(orig),
@@ -79,6 +82,8 @@ impl Drop for RawMode {
     fn drop(&mut self) {
         if let Some(orig) = &self.orig {
             unsafe {
+                // send rmcup escape to return to normal screen buffer.
+                print!("\x1b[?1049l");
                 let _ = tcsetattr(self.fd, 0, orig as *const Termios);
             }
         }
