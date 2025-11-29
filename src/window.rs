@@ -61,38 +61,47 @@ impl WindowBuilder {
         }
     }
 
+    /// scroll sets the scrolling offset of the window
     pub fn scroll(mut self, scroll_x: usize, scroll_y: usize) -> WindowBuilder {
         self.scroll_x = scroll_x;
         self.scroll_y = scroll_y;
         self
     }
 
+    /// parent sets the window that owns this window. Omitting parent implicitly sets the parent to
+    /// the System Window.
     pub fn parent(mut self, parent_id: u32) -> WindowBuilder {
         self.parent_id = parent_id;
         self
     }
 
+    /// offset sets the windows offset within the parent
     pub fn offset(mut self, offset_x: usize, offset_y: usize) -> WindowBuilder {
         self.offset_x = offset_x;
         self.offset_y = offset_y;
         self
     }
 
+    /// fill fills the entire window with a given ommacell
     pub fn fill(mut self, fill: &OmmaCell) -> WindowBuilder {
         self.fill = Some(fill.clone());
         self
     }
 
+    /// name sets a name for the window
     pub fn name(mut self, name: String) -> WindowBuilder {
         self.name = Some(name);
         self
     }
 
+    /// hidden marks a window as hidden and it will be skipped during rendering
     pub fn hidden(mut self) -> WindowBuilder {
         self.hidden = true;
         self
     }
 
+    /// virt marks a window as virtual. Virtual windows are not rendered but can be used to group
+    /// them as an object
     pub fn virt(mut self) -> WindowBuilder {
         self.virt = true;
         self
@@ -194,10 +203,12 @@ impl Window {
         self.hidden = false
     }
 
+    /// add_child pushes a child id into the window's children list
     pub(crate) fn add_child(&mut self, child_id: u32) {
         self.children.push(child_id);
     }
 
+    /// remove_child removes a child id from the windsow's children list
     pub(crate) fn remove_child(&mut self, child_id: u32) -> Result<(), OmmaErr> {
         if let Some(index) = self.children.iter().position(|x| *x == child_id) {
             self.children.remove(index);
@@ -211,6 +222,7 @@ impl Window {
         Ok(())
     }
 
+    /// set_ommacell sets a location within the window to a selected ommacell
     pub fn set_ommacell(&mut self, x: usize, y: usize, ommacell: &OmmaCell) -> Result<(), OmmaErr> {
         if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
@@ -226,6 +238,7 @@ impl Window {
         Ok(())
     }
 
+    /// get_ommacell retrieves the ommacell aa location within the window to a selected ommacell
     pub fn get_ommacell(&self, x: usize, y: usize) -> Result<OmmaCell, OmmaErr> {
         if x >= self.width || y >= self.height {
             return Err(OmmaErr::new(&format!(
@@ -240,6 +253,7 @@ impl Window {
         Ok(self.buffer[x][y].clone())
     }
 
+    /// blit submits the window's contents into the terminal backplane
     pub fn blit(
         &self,
         windows: &Vec<Window>,
@@ -277,6 +291,7 @@ impl Window {
         Ok(written)
     }
 
+    /// fill fills the window with a single ommacell
     pub fn fill(&mut self, cell: &OmmaCell) -> Result<u32, OmmaErr> {
         for x in 0..self.width {
             for y in 0..self.height {
@@ -287,7 +302,7 @@ impl Window {
         Ok(self.view_width as u32 * self.view_height as u32)
     }
 
-    // TODO: Fix this to stash border info into Window then only apply it when blitting
+    /// set_border TODO: Fix this to stash border info into Window then only apply it when blitting
     pub fn set_border(&mut self, cells: Vec<&OmmaCell>) -> Result<u32, OmmaErr> {
         let max_width = self.view_width - 1;
         let max_height = self.view_height - 1;
@@ -321,6 +336,7 @@ impl Window {
         Ok(self.view_width as u32 * 2 + self.view_height as u32 * 2 - 4)
     }
 
+    /// string_raw prints a string into a window directly, using the properties from ommacell
     pub fn string_raw(
         &mut self,
         x: usize,
