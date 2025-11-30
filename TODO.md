@@ -1,6 +1,6 @@
 - [x] Implement virtual window selection and scrolling
-- [ ] Defer border application until rendering and leave window buffer untouched
-- [ ] Add border to window builder
+- [x] Defer border application until rendering and leave window buffer untouched
+- [x] Add border to window builder
 - [ ] Implement window internal padding logic - reusable padding struct to hold internally?
 - [ ] Ponder how deep the responsibility of state management should go in this library
   - Does it make sense to store menus and answer values logically instead of as raw character data?

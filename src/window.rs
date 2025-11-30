@@ -1,6 +1,7 @@
 use crate::border::OmmaBorder;
 use crate::cell::OmmaCell;
 use crate::error::OmmaErr;
+use crate::pad::OmmaPad;
 use crate::session::Session;
 use crate::term::OmmaTerm;
 
@@ -20,6 +21,7 @@ pub struct Window {
     scroll_x: usize,
     scroll_y: usize,
     border: Option<OmmaBorder>,
+    pad: OmmaPad,
     hidden: bool,
     virt: bool,
     buffer: Vec<Vec<OmmaCell>>,
@@ -37,6 +39,7 @@ pub struct WindowBuilder {
     scroll_x: usize,
     scroll_y: usize,
     border: Option<OmmaBorder>,
+    pad: OmmaPad,
     hidden: bool,
     virt: bool,
     fill: Option<OmmaCell>,
@@ -56,6 +59,7 @@ impl WindowBuilder {
             scroll_x: 0,
             scroll_y: 0,
             border: None,
+            pad: OmmaPad::default(),
             hidden: false,
             virt: false,
             fill: None,
@@ -126,6 +130,30 @@ impl WindowBuilder {
         self
     }
 
+    /// pad sets a pad for the window
+    pub fn pad(mut self, pad: &OmmaPad) -> WindowBuilder {
+        self.pad = pad.clone();
+        self
+    }
+
+    /// pad_raw takes 4 usizes and uses it as a top bottom left right set of pad values
+    pub fn pad_raw(
+        mut self,
+        top: usize,
+        bottom: usize,
+        left: usize,
+        right: usize,
+    ) -> WindowBuilder {
+        self.pad = OmmaPad::new(top, bottom, left, right);
+        self
+    }
+
+    /// pad_mono takes 1 usize and uses it as a for all pad values
+    pub fn pad_mono(mut self, mono: usize) -> WindowBuilder {
+        self.pad = OmmaPad::new(mono, mono, mono, mono);
+        self
+    }
+
     /// hidden marks a window as hidden and it will be skipped during rendering
     pub fn hidden(mut self) -> WindowBuilder {
         self.hidden = true;
@@ -163,6 +191,7 @@ impl WindowBuilder {
             scroll_x: self.scroll_x,
             scroll_y: self.scroll_y,
             border: self.border.clone(),
+            pad: self.pad.clone(),
             hidden: self.hidden,
             virt: self.virt,
             buffer,

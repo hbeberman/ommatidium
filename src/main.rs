@@ -5,6 +5,7 @@ use ommatidium::session::Session;
 fn hello() -> Result<(), OmmaErr> {
     let mut session = Session::new()?;
 
+    // TODO: Remove the need for this backdrop
     session
         .new_window(30, 30)
         .name("Backdrop".to_string())
