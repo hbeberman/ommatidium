@@ -29,7 +29,7 @@ impl Session {
         Self::new_inner(term)
     }
 
-    // new_inner implements session init shared between headed/headless
+    /// new_inner implements session init shared between headed/headless
     fn new_inner(term: OmmaTerm) -> Result<Self, OmmaErr> {
         if crate::current_id() != 0 {
             return Err(OmmaErr::new(
@@ -57,7 +57,7 @@ impl Session {
         WindowBuilder::new(width, height)
     }
 
-    /// submit WindowBuilder into the session as a new window, returns window id
+    /// submit adds a WindowBuilder into the session as a new window, returns window id
     pub fn submit(&mut self, windowbuilder: WindowBuilder) -> Result<u32, OmmaErr> {
         windowbuilder.submit(self)
     }
@@ -65,7 +65,7 @@ impl Session {
     // TODO: implement to run closures on every descendant window
     //pub fn fn_window(&mut self, window_id: u32) -> Result<(u32, Vec<u32>), OmmaErr> {}
 
-    // register_window adds a window into the session and returns its id
+    /// register_window adds a window into the session and returns its id
     pub(crate) fn register_window(&mut self, window: Window) -> Result<u32, OmmaErr> {
         let id = window.id();
         let parent = window.parent_id();

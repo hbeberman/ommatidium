@@ -35,7 +35,8 @@ pub struct RawMode {
 }
 
 impl RawMode {
-    pub fn set_stdin_raw() -> Result<Self, OmmaErr> {
+    /// set_alt_raw sets the terminal to alternative screen buffer and enables raw mode
+    pub(crate) fn set_alt_raw() -> Result<Self, OmmaErr> {
         let stdin = io::stdin();
         let fd = stdin.as_raw_fd();
         unsafe {
@@ -72,13 +73,14 @@ impl RawMode {
     }
 
     #[allow(dead_code)]
-    pub fn noop() -> Self {
-        // Used in tests to avoid touching the real TTY.
+    /// noop is used tests to avoid touching the real TTY.
+    pub(crate) fn noop() -> Self {
         RawMode { fd: -1, orig: None }
     }
 }
 
 impl Drop for RawMode {
+    /// drop restores the primary terminal history and disables raw mode
     fn drop(&mut self) {
         if let Some(orig) = &self.orig {
             unsafe {
@@ -91,7 +93,8 @@ impl Drop for RawMode {
 }
 
 #[cfg(unix)]
-pub fn terminfo() -> Result<(u16, u16), OmmaErr> {
+/// terminfo reuns the height and width of the terminal using the IOCGWINSZ syscall
+pub(crate) fn terminfo() -> Result<(u16, u16), OmmaErr> {
     let stdout = io::stdout();
     if !stdout.is_terminal() {
         return Err(OmmaErr::new("failed to open stdio, invalid terminal"));
@@ -165,7 +168,7 @@ impl Drop for OmmaTerm {
 impl OmmaTerm {
     pub fn new() -> Result<Self, OmmaErr> {
         let (max_row, max_col) = terminfo()?;
-        let raw = RawMode::set_stdin_raw()?;
+        let raw = RawMode::set_alt_raw()?;
         let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         let back = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         let mut stdout = io::stdout();
@@ -184,6 +187,7 @@ impl OmmaTerm {
     }
 
     #[allow(dead_code)]
+    /// new_mock initializes a new term object without an actual backing terminal
     pub fn new_mock(max_row: u16, max_col: u16) -> Result<Self, OmmaErr> {
         let raw = RawMode::noop();
         let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
@@ -200,7 +204,8 @@ impl OmmaTerm {
         })
     }
 
-    pub fn move_cursor(&mut self, col: u16, row: u16) -> Result<(), OmmaErr> {
+    /// move_cursor sets the terminal cursor to a target location
+    pub(crate) fn move_cursor(&mut self, col: u16, row: u16) -> Result<(), OmmaErr> {
         if row >= self.max_row || col >= self.max_col {
             return Err(OmmaErr::new(&format!(
                 "invalid cursor move {}:{} (max {}:{})",
@@ -217,7 +222,13 @@ impl OmmaTerm {
         Ok(())
     }
 
-    pub fn put_cell_at(&mut self, x: usize, y: usize, cell: &OmmaCell) -> Result<u32, OmmaErr> {
+    /// put_cell_at sets the cell at a location to be the ommacell argument
+    pub(crate) fn put_cell_at(
+        &mut self,
+        x: usize,
+        y: usize,
+        cell: &OmmaCell,
+    ) -> Result<u32, OmmaErr> {
         let y_max = self.back.len();
         let x_max = self.back[y].len();
         if x > x_max || y > y_max {
@@ -235,13 +246,20 @@ impl OmmaTerm {
         }
     }
 
-    pub fn render_cell_at(&mut self, x: u16, y: u16, cell: &OmmaCell) -> Result<(), OmmaErr> {
+    /// render_cell_at writes a cell to a location at the ommaterm saved stdout handle
+    pub(crate) fn render_cell_at(
+        &mut self,
+        x: u16,
+        y: u16,
+        cell: &OmmaCell,
+    ) -> Result<(), OmmaErr> {
         self.move_cursor(x, y)?;
         write!(self.stdout, "{}", cell.ch)?;
         Ok(())
     }
 
-    pub fn render(&mut self) -> Result<u32, OmmaErr> {
+    /// render writes the entire back plane terminal to the screen
+    pub(crate) fn render(&mut self) -> Result<u32, OmmaErr> {
         let mut written = 0;
         for x in 0..self.max_col {
             for y in 0..self.max_row {
@@ -253,7 +271,8 @@ impl OmmaTerm {
         Ok(written)
     }
 
-    pub fn read_key(&mut self) -> Result<Option<char>, OmmaErr> {
+    /// read_key reads a single keypress and returns the char
+    pub(crate) fn read_key(&mut self) -> Result<Option<char>, OmmaErr> {
         let mut buf = [0u8; 1];
         let n = io::stdin().read(&mut buf)?;
         if n == 0 {

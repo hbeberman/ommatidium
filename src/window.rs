@@ -107,7 +107,7 @@ impl WindowBuilder {
         self
     }
 
-    /// submit WindowBuilder into the session as a new window, returns window id
+    /// submit adds a WindowBuilder into the session as a new window, returns window id
     pub fn submit(&self, session: &mut Session) -> Result<u32, OmmaErr> {
         let id = crate::next_id()?;
         let buffer = vec![vec![OmmaCell::transparent(); self.height]; self.width];

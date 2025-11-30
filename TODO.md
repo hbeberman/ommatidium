@@ -1,4 +1,4 @@
-- [ ] Implement virtual window selection and scrolling
+- [x] Implement virtual window selection and scrolling
 - [ ] Defer border application until rendering and leave window buffer untouched
 - [ ] Add border to window builder
 - [ ] Implement window internal padding logic - reusable padding struct to hold internally?
@@ -10,7 +10,9 @@
   - Alpha Masking
 - [ ] Add a concept of temporary animated windows
   - Too far? It could be neat for particle effect kindda stuff
-- [ ] Revisit how we're storing Windows, is hierarchical traversal fine or would we be better served by a singular session owned vec and a list child indexes?
+- [x] Revisit how we're storing Windows, is hierarchical traversal fine or would we be better served by a singular session owned vec and a list child indexes? Session owned vec is cleaner.
 - [ ] Add a way for ommatidium to blit its own debug log as a topmost window
 - [ ] Add a "fit" window type that will just be the actual physical dimensions of the terminal
 - [ ] Figure out a way to run closures or functions on all descendants of a node
+- [ ] Add a window type that renders a body of text with wordwrap
+- [ ] Add a window type that is an input field with an indicator that it's selected
