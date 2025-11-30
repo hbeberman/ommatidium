@@ -1,5 +1,5 @@
 use crate::border::OmmaBorder;
-use crate::cell::OmmaCell;
+use crate::cell::{BLANK_CELL, EMPTY_CELL, OmmaCell};
 use crate::error::OmmaErr;
 use crate::pad::OmmaPad;
 use crate::session::Session;
@@ -248,6 +248,10 @@ impl Window {
         self.view_height
     }
 
+    pub fn remove_border(&mut self) {
+        self.border = None;
+    }
+
     pub fn set_border(&mut self, border: &OmmaBorder) {
         self.border = Some(border.clone());
     }
@@ -276,6 +280,19 @@ impl Window {
         if let Some(border) = &mut self.border {
             border.clear_hidden()
         }
+    }
+
+    pub fn pad_top(&self) -> usize {
+        self.pad.pad_top() + if self.border.is_some() { 1 } else { 0 }
+    }
+    pub fn pad_bottom(&self) -> usize {
+        self.pad.pad_bottom() + if self.border.is_some() { 1 } else { 0 }
+    }
+    pub fn pad_left(&self) -> usize {
+        self.pad.pad_left() + if self.border.is_some() { 1 } else { 0 }
+    }
+    pub fn pad_right(&self) -> usize {
+        self.pad.pad_right() + if self.border.is_some() { 1 } else { 0 }
     }
 
     pub fn is_hidden(&self) -> bool {
@@ -355,51 +372,86 @@ impl Window {
         if self.hidden {
             return Ok(0);
         }
-        let offset_x = self.offset_x + parent_offset_x;
-        let offset_y = self.offset_y + parent_offset_y;
+        let window_offset_x = self.offset_x + parent_offset_x;
+        let window_offset_y = self.offset_y + parent_offset_y;
+        let offset_x = window_offset_x + self.pad_left();
+        let offset_y = window_offset_y + self.pad_top();
+        let c_width = self
+            .view_width
+            .saturating_sub(self.pad_left().saturating_add(self.pad_right()));
+        let c_height = self
+            .view_height
+            .saturating_sub(self.pad_top().saturating_add(self.pad_bottom()));
         let mut written = 0;
         // Skip drawing virtual window contents
         if !self.virt {
-            for x in 0..self.view_width {
-                for y in 0..self.view_height {
+            // Draw raw window contents
+            for x in 0..c_width {
+                for y in 0..c_height {
                     written += term.put_cell_at(x + offset_x, y + offset_y, &self.buffer[x][y])?;
                 }
             }
 
+            // Blank pad
+            let inner_x_start = self.pad_left();
+            let inner_x_end = self.view_width.saturating_sub(self.pad_right());
+            let inner_y_start = self.pad_top();
+            let inner_y_end = self.view_height.saturating_sub(self.pad_bottom());
+            for x in 0..self.view_width {
+                for y in 0..self.view_height {
+                    let in_content_x = x >= inner_x_start && x < inner_x_end;
+                    let in_content_y = y >= inner_y_start && y < inner_y_end;
+                    if !(in_content_x && in_content_y) {
+                        // Borders are transparent instead of blank if not rendered
+                        written += if self.border.is_some()
+                            && (x == 0
+                                || y == 0
+                                || x == self.view_width - 1
+                                || y == self.view_height - 1)
+                        {
+                            term.put_cell_at(x + window_offset_x, y + window_offset_y, &EMPTY_CELL)?
+                        } else {
+                            term.put_cell_at(x + window_offset_x, y + window_offset_y, &BLANK_CELL)?
+                        }
+                    }
+                }
+            }
+
+            // Draw border
             if let Some(border) = &self.border
                 && !border.hidden()
             {
                 for x in 0..self.view_width {
-                    term.put_cell_at(x + offset_x, offset_y, border.border_top())?;
+                    term.put_cell_at(x + window_offset_x, window_offset_y, border.border_top())?;
                     term.put_cell_at(
-                        x + offset_x,
-                        self.view_height + offset_y - 1,
+                        x + window_offset_x,
+                        self.view_height + window_offset_y - 1,
                         border.border_bottom(),
                     )?;
                 }
                 for y in 0..self.view_height {
-                    term.put_cell_at(offset_x, y + offset_y, border.border_left())?;
+                    term.put_cell_at(window_offset_x, y + window_offset_y, border.border_left())?;
                     term.put_cell_at(
-                        self.view_width + offset_x - 1,
-                        y + offset_y,
+                        self.view_width + window_offset_x - 1,
+                        y + window_offset_y,
                         border.border_right(),
                     )?;
                 }
 
-                term.put_cell_at(offset_x, offset_y, border.border_corner())?;
+                term.put_cell_at(window_offset_x, window_offset_y, border.border_corner())?;
                 term.put_cell_at(
-                    offset_x,
-                    self.view_height + offset_y - 1,
+                    window_offset_x,
+                    self.view_height + window_offset_y - 1,
                     border.border_corner(),
                 )?;
                 term.put_cell_at(
-                    self.view_width + offset_x - 1,
-                    offset_y,
+                    self.view_width + window_offset_x - 1,
+                    window_offset_y,
                     border.border_corner(),
                 )?;
                 term.put_cell_at(
-                    self.view_width + offset_x - 1,
-                    self.view_height + offset_y - 1,
+                    self.view_width + window_offset_x - 1,
+                    self.view_height + window_offset_y - 1,
                     border.border_corner(),
                 )?;
             }
@@ -439,11 +491,9 @@ impl Window {
         cell: &OmmaCell,
         string: String,
     ) -> Result<u32, OmmaErr> {
-        let (mut x, y, max_width, max_height) = if self.border.is_some() {
-            (x + 1, y + 1, self.width - 2, self.height - 2)
-        } else {
-            (x, y, self.width - 1, self.height - 1)
-        };
+        let mut x = x;
+        let max_width = self.width - 1;
+        let max_height = self.height - 1;
 
         if x + string.len() > max_width || y > max_height {
             return Err(OmmaErr::new(&format!(

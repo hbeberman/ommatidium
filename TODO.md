@@ -16,3 +16,4 @@
 - [ ] Figure out a way to run closures or functions on all descendants of a node
 - [ ] Add a window type that renders a body of text with wordwrap
 - [ ] Add a window type that is an input field with an indicator that it's selected
+- [ ] Add a window prevalidator that warns against invalid conditions in a window/session that creep in when we let users manipulate the window structures themselves

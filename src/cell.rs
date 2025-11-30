@@ -38,6 +38,13 @@ pub const BLANK_CELL: OmmaCell = OmmaCell {
     attrs: 0,
 };
 
+pub const EMPTY_CELL: OmmaCell = OmmaCell {
+    ch: EMPTY,
+    fg: 0,
+    bg: 0,
+    attrs: 0,
+};
+
 pub const PLAYER_CELL: OmmaCell = OmmaCell {
     ch: '@',
     fg: 0,

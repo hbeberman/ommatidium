@@ -230,9 +230,9 @@ impl OmmaTerm {
         y: usize,
         cell: &OmmaCell,
     ) -> Result<u32, OmmaErr> {
-        let y_max = self.back.len();
-        let x_max = self.back[y].len();
-        if x > x_max || y > y_max {
+        let x_max = self.back.len();
+        let y_max = self.back[0].len();
+        if x >= x_max || y >= y_max {
             return Err(OmmaErr::new(&format!(
                 "invalid put cell at {}:{} (max {}:{})",
                 x, y, x_max, y_max,

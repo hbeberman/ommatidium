@@ -22,4 +22,18 @@ impl OmmaPad {
             pad_right,
         }
     }
+
+    /// Getters
+    pub fn pad_top(&self) -> usize {
+        self.pad_top
+    }
+    pub fn pad_bottom(&self) -> usize {
+        self.pad_bottom
+    }
+    pub fn pad_left(&self) -> usize {
+        self.pad_left
+    }
+    pub fn pad_right(&self) -> usize {
+        self.pad_right
+    }
 }
