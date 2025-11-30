@@ -15,30 +15,27 @@ fn hello() -> Result<(), OmmaErr> {
         .new_window(10, 10)
         .name("World".to_string())
         .fill(&FLOOR_CELL)
+        .border_mono(&WALL_CELL)
         .submit(&mut session)?;
-    let window = session.window(id_world)?;
-    window.set_border(vec![&WALL_CELL])?;
 
     session
         .new_window(5, 5)
         .offset(15, 0)
         .fill(&WALL_CELL)
         .submit(&mut session)?;
-    let id = session
+    let id_transparent = session
         .new_window(10, 10)
         .offset(5, 5)
+        .border_raw(&HORIZ_CELL, &VERT_CELL, &CORNER_CELL)
         .submit(&mut session)?;
-    let window = session.window(id)?;
-    window.set_border(vec![&HORIZ_CELL, &VERT_CELL, &CORNER_CELL])?;
 
-    let id = session
+    let id_dialog = session
         .new_window(20, 4)
         .offset(11, 3)
         .fill(&BLANK_CELL)
+        .border_mono(&SPECIAL_CELL)
         .submit(&mut session)?;
-
-    let window = session.window(id)?;
-    window.set_border(vec![&SPECIAL_CELL])?;
+    let window = session.window(id_dialog)?;
     window.string_raw(1, 0, &WALL_CELL, "Hello Dungeon!".to_string())?;
     window.string_raw(1, 1, &WALL_CELL, "Yes!".to_string())?;
     window.string_raw(8, 1, &WALL_CELL, "No!".to_string())?;
@@ -74,6 +71,9 @@ fn hello() -> Result<(), OmmaErr> {
                 'p' => session.window(id_player)?.toggle_hidden(),
                 'h' => session.window(id_block)?.toggle_hidden(),
                 't' => session.window(id_temp)?.toggle_hidden(),
+                'q' => session.window(id_world)?.toggle_border_hidden(),
+                'w' => session.window(id_transparent)?.toggle_border_hidden(),
+                'e' => session.window(id_dialog)?.toggle_border_hidden(),
                 '\x03' => break,
                 _ => continue,
             }

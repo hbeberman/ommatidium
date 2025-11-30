@@ -1,3 +1,4 @@
+use crate::border::OmmaBorder;
 use crate::error::OmmaErr;
 use crate::ommacell::*;
 use crate::session::Session;
@@ -18,7 +19,7 @@ pub struct Window {
     view_height: usize,
     scroll_x: usize,
     scroll_y: usize,
-    border: bool,
+    border: Option<OmmaBorder>,
     hidden: bool,
     virt: bool,
     buffer: Vec<Vec<OmmaCell>>,
@@ -35,7 +36,7 @@ pub struct WindowBuilder {
     view_height: usize,
     scroll_x: usize,
     scroll_y: usize,
-    border: bool,
+    border: Option<OmmaBorder>,
     hidden: bool,
     virt: bool,
     fill: Option<OmmaCell>,
@@ -54,7 +55,7 @@ impl WindowBuilder {
             view_height: height,
             scroll_x: 0,
             scroll_y: 0,
-            border: false,
+            border: None,
             hidden: false,
             virt: false,
             fill: None,
@@ -94,6 +95,37 @@ impl WindowBuilder {
         self
     }
 
+    /// border sets a border for the window
+    pub fn border(mut self, border: &OmmaBorder) -> WindowBuilder {
+        self.border = Some(border.clone());
+        self
+    }
+
+    /// border_raw takes 3 ommacells and uses it as a horiz, vert, corner border for the window
+    pub fn border_raw(
+        mut self,
+        horiz: &OmmaCell,
+        vert: &OmmaCell,
+        corner: &OmmaCell,
+    ) -> WindowBuilder {
+        self.border = Some(OmmaBorder::new(horiz, vert, corner));
+        self
+    }
+
+    /// border_mono takes 1 ommacell and uses it for all sides and corner
+    pub fn border_mono(mut self, mono: &OmmaCell) -> WindowBuilder {
+        self.border = Some(OmmaBorder::new_mono(mono));
+        self
+    }
+
+    /// border_hidden marks a border as hidden and it will be skipped during rendering
+    pub fn border_hidden(mut self) -> WindowBuilder {
+        if let Some(border) = &mut self.border {
+            border.set_hidden();
+        }
+        self
+    }
+
     /// hidden marks a window as hidden and it will be skipped during rendering
     pub fn hidden(mut self) -> WindowBuilder {
         self.hidden = true;
@@ -130,7 +162,7 @@ impl WindowBuilder {
             view_height: self.view_height,
             scroll_x: self.scroll_x,
             scroll_y: self.scroll_y,
-            border: self.border,
+            border: self.border.clone(),
             hidden: self.hidden,
             virt: self.virt,
             buffer,
@@ -185,6 +217,36 @@ impl Window {
 
     pub fn view_height(&self) -> usize {
         self.view_height
+    }
+
+    pub fn set_border(&mut self, border: &OmmaBorder) {
+        self.border = Some(border.clone());
+    }
+
+    pub fn is_border_hidden(&self) -> bool {
+        if let Some(border) = &self.border {
+            border.hidden()
+        } else {
+            true
+        }
+    }
+
+    pub fn toggle_border_hidden(&mut self) {
+        if let Some(border) = &mut self.border {
+            border.toggle_hidden()
+        }
+    }
+
+    pub fn set_border_hidden(&mut self) {
+        if let Some(border) = &mut self.border {
+            border.set_hidden()
+        }
+    }
+
+    pub fn clear_border_hidden(&mut self) {
+        if let Some(border) = &mut self.border {
+            border.clear_hidden()
+        }
     }
 
     pub fn is_hidden(&self) -> bool {
@@ -274,6 +336,44 @@ impl Window {
                     written += term.put_cell_at(x + offset_x, y + offset_y, &self.buffer[x][y])?;
                 }
             }
+
+            if let Some(border) = &self.border
+                && !border.hidden()
+            {
+                for x in 0..self.view_width {
+                    term.put_cell_at(x + offset_x, offset_y, border.border_top())?;
+                    term.put_cell_at(
+                        x + offset_x,
+                        self.view_height + offset_y - 1,
+                        border.border_bottom(),
+                    )?;
+                }
+                for y in 0..self.view_height {
+                    term.put_cell_at(offset_x, y + offset_y, border.border_left())?;
+                    term.put_cell_at(
+                        self.view_width + offset_x - 1,
+                        y + offset_y,
+                        border.border_right(),
+                    )?;
+                }
+
+                term.put_cell_at(offset_x, offset_y, border.border_corner())?;
+                term.put_cell_at(
+                    offset_x,
+                    self.view_height + offset_y - 1,
+                    border.border_corner(),
+                )?;
+                term.put_cell_at(
+                    self.view_width + offset_x - 1,
+                    offset_y,
+                    border.border_corner(),
+                )?;
+                term.put_cell_at(
+                    self.view_width + offset_x - 1,
+                    self.view_height + offset_y - 1,
+                    border.border_corner(),
+                )?;
+            }
         }
         for window_id in &self.children {
             if &self.id() == window_id {
@@ -302,40 +402,6 @@ impl Window {
         Ok(self.view_width as u32 * self.view_height as u32)
     }
 
-    /// set_border TODO: Fix this to stash border info into Window then only apply it when blitting
-    pub fn set_border(&mut self, cells: Vec<&OmmaCell>) -> Result<u32, OmmaErr> {
-        let max_width = self.view_width - 1;
-        let max_height = self.view_height - 1;
-        let (horiz, vert, corner) = match cells.len() {
-            1 => (cells[0], cells[0], cells[0]),
-            2 => (cells[0], cells[1], cells[0]),
-            3 => (cells[0], cells[1], cells[2]),
-            _ => {
-                return Err(OmmaErr::new(&format!(
-                    "invalid set_border vec length {}",
-                    cells.len()
-                )));
-            }
-        };
-        for x in 1..self.view_width - 1 {
-            self.buffer[x][0_usize] = horiz.clone();
-            self.buffer[x][max_height] = horiz.clone();
-        }
-
-        for y in 1..self.view_height - 1 {
-            self.buffer[0_usize][y] = vert.clone();
-            self.buffer[max_width][y] = vert.clone();
-        }
-        self.buffer[0_usize][0_usize] = corner.clone();
-        self.buffer[0_usize][max_height] = corner.clone();
-        self.buffer[max_width][0_usize] = corner.clone();
-        self.buffer[max_width][max_height] = corner.clone();
-
-        self.border = true;
-
-        Ok(self.view_width as u32 * 2 + self.view_height as u32 * 2 - 4)
-    }
-
     /// string_raw prints a string into a window directly, using the properties from ommacell
     pub fn string_raw(
         &mut self,
@@ -344,7 +410,7 @@ impl Window {
         cell: &OmmaCell,
         string: String,
     ) -> Result<u32, OmmaErr> {
-        let (mut x, y, max_width, max_height) = if self.border {
+        let (mut x, y, max_width, max_height) = if self.border.is_some() {
             (x + 1, y + 1, self.width - 2, self.height - 2)
         } else {
             (x, y, self.width - 1, self.height - 1)

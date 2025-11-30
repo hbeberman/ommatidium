@@ -1,3 +1,4 @@
+pub mod border;
 pub mod error;
 pub mod ommacell;
 pub mod session;

@@ -172,6 +172,7 @@ impl OmmaTerm {
         let front = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         let back = vec![vec![OmmaCell::default(); max_row as usize]; max_col as usize];
         let mut stdout = io::stdout();
+        eprintln!("Terminal dimensions ({max_row}:{max_col})");
         write!(stdout, "\x1b[?25l")?;
         stdout.flush()?;
         Ok(OmmaTerm {
