@@ -1,6 +1,6 @@
 use crate::border::OmmaBorder;
+use crate::cell::OmmaCell;
 use crate::error::OmmaErr;
-use crate::ommacell::*;
 use crate::session::Session;
 use crate::term::OmmaTerm;
 

@@ -1,5 +1,5 @@
+use crate::cell::{EMPTY, OmmaCell};
 use crate::error::OmmaErr;
-use crate::ommacell::{EMPTY, OmmaCell};
 use std::io::{self, IsTerminal, Read, Write};
 use std::mem::MaybeUninit;
 use std::os::fd::{AsRawFd, RawFd};

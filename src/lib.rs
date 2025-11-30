@@ -1,6 +1,6 @@
 pub mod border;
+pub mod cell;
 pub mod error;
-pub mod ommacell;
 pub mod session;
 pub mod term;
 pub mod window;

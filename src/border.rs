@@ -1,4 +1,4 @@
-use crate::ommacell::OmmaCell;
+use crate::cell::OmmaCell;
 
 #[derive(Default, Clone)]
 #[allow(dead_code)]

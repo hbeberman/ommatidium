@@ -1,5 +1,5 @@
+use ommatidium::cell::*;
 use ommatidium::error::OmmaErr;
-use ommatidium::ommacell::*;
 use ommatidium::session::Session;
 
 fn hello() -> Result<(), OmmaErr> {
