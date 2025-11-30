@@ -11,7 +11,7 @@ pub struct OmmaCell {
 
 impl Default for OmmaCell {
     fn default() -> Self {
-        OmmaCell::new(' ', 0, 0, 0)
+        Self::new(' ', 0, 0, 0)
     }
 }
 
@@ -21,7 +21,7 @@ impl OmmaCell {
     }
 
     pub fn transparent() -> Self {
-        OmmaCell::new(EMPTY, 0, 0, 0)
+        Self::new(EMPTY, 0, 0, 0)
     }
 }
 
