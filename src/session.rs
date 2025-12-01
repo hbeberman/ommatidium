@@ -31,7 +31,7 @@ impl Session {
 
     /// new_inner implements session init shared between headed/headless
     fn new_inner(term: OmmaTerm) -> Result<Self, OmmaErr> {
-        if crate::current_id() != 0 {
+        if crate::current_window_id() != 0 {
             return Err(OmmaErr::new(
                 "Session::new() may only be invoked once per executable lifetime",
             ));

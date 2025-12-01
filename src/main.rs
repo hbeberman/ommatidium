@@ -1,5 +1,5 @@
 use ommatidium::cell::*;
-use ommatidium::color::{BLACK, BLUE, DARK_GREY, GREEN, OmmaColor, RED};
+use ommatidium::color::{BLACK, BLUE, DARK_GREY, GREEN, RED};
 use ommatidium::error::OmmaErr;
 use ommatidium::session::Session;
 
