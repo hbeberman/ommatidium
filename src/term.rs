@@ -255,7 +255,7 @@ impl OmmaTerm {
         cell: &OmmaCell,
     ) -> Result<(), OmmaErr> {
         self.move_cursor(x, y)?;
-        write!(self.stdout, "{}", cell.ch)?;
+        write!(self.stdout, "{}{}{}", cell.fgcode(), cell.bgcode(), cell.ch)?;
         Ok(())
     }
 

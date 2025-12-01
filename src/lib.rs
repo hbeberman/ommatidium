@@ -1,5 +1,6 @@
 pub mod border;
 pub mod cell;
+pub mod color;
 pub mod error;
 pub mod pad;
 pub mod session;

@@ -15,7 +15,7 @@ impl Default for OmmaPad {
 
 impl OmmaPad {
     pub fn new(pad_top: usize, pad_bottom: usize, pad_left: usize, pad_right: usize) -> Self {
-        OmmaPad {
+        Self {
             pad_top,
             pad_bottom,
             pad_left,

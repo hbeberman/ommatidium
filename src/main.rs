@@ -1,4 +1,5 @@
 use ommatidium::cell::*;
+use ommatidium::color::{BLACK, BLUE, DARK_GREY, GREEN, OmmaColor, RED};
 use ommatidium::error::OmmaErr;
 use ommatidium::session::Session;
 
@@ -12,11 +13,15 @@ fn hello() -> Result<(), OmmaErr> {
         .fill(&BLANK_CELL)
         .submit(&mut session)?;
 
+    let floor = OmmaCell {
+        fg: Some(DARK_GREY),
+        ..FLOOR_CELL
+    };
+
     let id_world = session
         .new_window(10, 10)
         .name("World".to_string())
-        .fill(&FLOOR_CELL)
-        .pad_mono(1)
+        .fill(&floor)
         .border_mono(&WALL_CELL)
         .submit(&mut session)?;
 
@@ -32,23 +37,35 @@ fn hello() -> Result<(), OmmaErr> {
         .border_raw(&HORIZ_CELL, &VERT_CELL, &CORNER_CELL)
         .submit(&mut session)?;
 
+    let positive = OmmaCell {
+        fg: Some(GREEN),
+        ..DEFAULT_CELL
+    };
+    let negative = OmmaCell {
+        fg: Some(RED),
+        ..DEFAULT_CELL
+    };
+    let blank_black = OmmaCell {
+        bg: Some(BLACK),
+        ..BLANK_CELL
+    };
     let id_dialog = session
         .new_window(25, 9)
         .offset(11, 3)
-        .fill(&BLANK_CELL)
-        .fill(&FLOOR_CELL)
+        .fill(&blank_black)
         .border_mono(&SPECIAL_CELL)
         .pad_mono(2)
         .submit(&mut session)?;
     let window = session.window(id_dialog)?;
-    window.string_raw(0, 0, &WALL_CELL, "Hello Dungeon!".to_string())?;
-    window.string_raw(0, 1, &WALL_CELL, "Yes!".to_string())?;
-    window.string_raw(7, 1, &WALL_CELL, "No!".to_string())?;
+    window.string_raw(0, 0, &BLANK_CELL, "Hello Dungeon!".to_string())?;
+    window.string_raw(0, 1, &positive, "Yes!".to_string())?;
+    window.string_raw(7, 1, &negative, "No!".to_string())?;
 
     let id_block = session
         .new_window(20, 20)
         .offset(0, 0)
-        .fill(&WALL_CELL)
+        .fill(&floor)
+        .border_mono(&WALL_CELL)
         .hidden()
         .submit(&mut session)?;
 
@@ -56,17 +73,34 @@ fn hello() -> Result<(), OmmaErr> {
         .new_window(5, 5)
         .offset(10, 3)
         .parent(id_block)
-        .fill(&FLOOR_CELL)
+        .fill(&floor)
         .submit(&mut session)?;
+
+    let player = OmmaCell {
+        fg: Some(BLUE),
+        ..PLAYER_CELL
+    };
+    let goblin = OmmaCell {
+        ch: 'g',
+        fg: Some(GREEN),
+        ..DEFAULT_CELL
+    };
 
     let id_player = session
         .new_window(1, 1)
         .offset(3, 3)
         .parent(id_temp)
-        .fill(&PLAYER_CELL)
+        .fill(&player)
         .submit(&mut session)?;
 
-    session.window(id_world)?.set_ommacell(3, 3, &PLAYER_CELL)?;
+    let id_goblin = session
+        .new_window(1, 1)
+        .offset(1, 1)
+        .parent(id_temp)
+        .fill(&goblin)
+        .submit(&mut session)?;
+
+    session.window(id_world)?.set_ommacell(3, 3, &player)?;
 
     loop {
         session.render()?;
@@ -74,12 +108,13 @@ fn hello() -> Result<(), OmmaErr> {
             match key {
                 'S' => break,
                 'p' => session.window(id_player)?.toggle_hidden(),
-                'h' => session.window(id_block)?.toggle_hidden(),
+                'h' => session.window(id_dialog)?.toggle_hidden(),
                 't' => session.window(id_temp)?.toggle_hidden(),
                 'q' => session.window(id_world)?.toggle_border_hidden(),
                 'w' => session.window(id_transparent)?.toggle_border_hidden(),
                 'e' => session.window(id_dialog)?.toggle_border_hidden(),
                 'z' => session.window(id_dialog)?.remove_border(),
+                'g' => session.window(id_goblin)?.toggle_hidden(),
                 '\x03' => break,
                 _ => continue,
             }

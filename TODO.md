@@ -1,7 +1,7 @@
 - [x] Implement virtual window selection and scrolling
 - [x] Defer border application until rendering and leave window buffer untouched
 - [x] Add border to window builder
-- [ ] Implement window internal padding logic - reusable padding struct to hold internally?
+- [x] Implement window internal padding logic - reusable padding struct to hold internally?
 - [ ] Ponder how deep the responsibility of state management should go in this library
   - Does it make sense to store menus and answer values logically instead of as raw character data?
 - [ ] Add a mechanism for filters on windows
@@ -17,3 +17,11 @@
 - [ ] Add a window type that renders a body of text with wordwrap
 - [ ] Add a window type that is an input field with an indicator that it's selected
 - [ ] Add a window prevalidator that warns against invalid conditions in a window/session that creep in when we let users manipulate the window structures themselves
+- [x] Add color support!
+- [ ] Add a concept of color shaders on characters
+ - temporal,
+ - positional (place X on screen, place X within string (animated rainbow text?))
+ - status (poisoned?, bleeding?, wounded?)
+ - could use this extensively
+- [ ] Add delta rendering to just render characters that have changed
+- [ ] Add continuation detection to delta rendering to avoid unnecessary cursor and color sets
