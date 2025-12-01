@@ -85,7 +85,7 @@ impl Session {
 
     /// window_direct returns the window corresponding to window_id if available
     pub(crate) fn window_direct(
-        windows: &mut Vec<Window>,
+        windows: &mut [Window],
         window_id: u32,
     ) -> Result<&mut Window, OmmaErr> {
         let id = window_id as usize;
@@ -135,10 +135,7 @@ impl Session {
     }
 
     /// object_direct returns the object corresponding to object_id if available
-    pub fn object_direct(
-        objects: &mut Vec<Object>,
-        object_id: u32,
-    ) -> Result<&mut Object, OmmaErr> {
+    pub fn object_direct(objects: &mut [Object], object_id: u32) -> Result<&mut Object, OmmaErr> {
         let id = object_id as usize;
         if id < objects.len() {
             Ok(&mut objects[id])
