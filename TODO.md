@@ -25,3 +25,7 @@
  - could use this extensively
 - [ ] Add delta rendering to just render characters that have changed
 - [ ] Add continuation detection to delta rendering to avoid unnecessary cursor and color sets
+- [x] Add objects
+- [ ] Differentiate object_ids and window_ids when handing them to the client
+- [ ] Repurpose window.buffer to stage object/bg when blitting
+- [ ] Add string objects

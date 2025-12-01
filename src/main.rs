@@ -61,19 +61,11 @@ fn hello() -> Result<(), OmmaErr> {
     window.string_raw(0, 1, &positive, "Yes!".to_string())?;
     window.string_raw(7, 1, &negative, "No!".to_string())?;
 
-    let id_block = session
+    let id_zone = session
         .new_window(20, 20)
         .offset(0, 0)
         .fill(&floor)
         .border_mono(&WALL_CELL)
-        .hidden()
-        .submit(&mut session)?;
-
-    let id_temp = session
-        .new_window(5, 5)
-        .offset(10, 3)
-        .parent(id_block)
-        .fill(&floor)
         .submit(&mut session)?;
 
     let player = OmmaCell {
@@ -87,34 +79,33 @@ fn hello() -> Result<(), OmmaErr> {
     };
 
     let id_player = session
-        .new_window(1, 1)
-        .offset(3, 3)
-        .parent(id_temp)
-        .fill(&player)
+        .new_object()
+        .name("Player".to_string())
+        .offset(3, 2)
+        .parent(id_zone)
+        .cell(&player)
         .submit(&mut session)?;
 
     let id_goblin = session
-        .new_window(1, 1)
+        .new_object()
+        .name("Goblin 1".to_string())
         .offset(1, 1)
-        .parent(id_temp)
-        .fill(&goblin)
+        .parent(id_zone)
+        .cell(&goblin)
         .submit(&mut session)?;
-
-    session.window(id_world)?.set_ommacell(3, 3, &player)?;
 
     loop {
         session.render()?;
         if let Some(key) = session.read_key()? {
             match key {
                 'S' => break,
-                'p' => session.window(id_player)?.toggle_hidden(),
+                'p' => session.object(id_player)?.toggle_hidden(),
                 'h' => session.window(id_dialog)?.toggle_hidden(),
-                't' => session.window(id_temp)?.toggle_hidden(),
                 'q' => session.window(id_world)?.toggle_border_hidden(),
                 'w' => session.window(id_transparent)?.toggle_border_hidden(),
                 'e' => session.window(id_dialog)?.toggle_border_hidden(),
-                'z' => session.window(id_dialog)?.remove_border(),
-                'g' => session.window(id_goblin)?.toggle_hidden(),
+                'z' => session.window(id_zone)?.toggle_hidden(),
+                'g' => session.object(id_goblin)?.toggle_hidden(),
                 '\x03' => break,
                 _ => continue,
             }

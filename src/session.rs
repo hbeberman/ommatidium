@@ -1,4 +1,5 @@
 use crate::error::OmmaErr;
+use crate::object::*;
 use crate::term::OmmaTerm;
 use crate::window::*;
 
@@ -6,6 +7,7 @@ use crate::window::*;
 pub struct Session {
     term: OmmaTerm,
     windows: Vec<Window>,
+    objects: Vec<Object>,
     children: Vec<u32>,
 }
 
@@ -40,6 +42,7 @@ impl Session {
         let mut session = Session {
             term,
             windows: Vec::new(),
+            objects: Vec::new(),
             children: Vec::new(),
         };
 
@@ -57,8 +60,8 @@ impl Session {
         WindowBuilder::new(width, height)
     }
 
-    /// submit adds a WindowBuilder into the session as a new window, returns window id
-    pub fn submit(&mut self, windowbuilder: WindowBuilder) -> Result<u32, OmmaErr> {
+    /// submit_window adds a WindowBuilder into the session as a new window, returns window id
+    pub fn submit_window(&mut self, windowbuilder: WindowBuilder) -> Result<u32, OmmaErr> {
         windowbuilder.submit(self)
     }
 
@@ -75,25 +78,89 @@ impl Session {
         Ok(id)
     }
 
-    /// window returns the window object corresponding to window_id if available
+    /// window returns the window corresponding to window_id if available
     pub fn window(&mut self, window_id: u32) -> Result<&mut Window, OmmaErr> {
+        Self::window_direct(&mut self.windows, window_id)
+    }
+
+    /// window_direct returns the window corresponding to window_id if available
+    pub(crate) fn window_direct(
+        windows: &mut Vec<Window>,
+        window_id: u32,
+    ) -> Result<&mut Window, OmmaErr> {
         let id = window_id as usize;
-        if id < self.windows.len() {
-            Ok(&mut self.windows[id])
+        if id < windows.len() {
+            Ok(&mut windows[id])
         } else {
             Err(OmmaErr::new(&format!(
                 "invalid window_id {}, max is {}",
                 window_id,
-                self.windows.len() - 1,
+                windows.len() - 1,
+            )))
+        }
+    }
+
+    /// new_object creates a new ObjectBuilder object for further building
+    pub fn new_object(&self) -> ObjectBuilder {
+        ObjectBuilder::new()
+    }
+
+    /// submit_object adds an ObjectBuilder into the session as a new object, returns object id
+    pub fn submit_object(&mut self, objectbuilder: ObjectBuilder) -> Result<u32, OmmaErr> {
+        objectbuilder.submit(self)
+    }
+
+    /// register_object adds on object into the session and returns its id
+    pub(crate) fn register_object(&mut self, object: Object) -> Result<u32, OmmaErr> {
+        let id = object.id();
+        let window = object.window_id();
+        self.objects.push(object);
+        let parent_window = self.window(window)?;
+        parent_window.add_object(id);
+        Ok(id)
+    }
+
+    /// object returns the object corresponding to object_id if available
+    pub fn object(&mut self, object_id: u32) -> Result<&mut Object, OmmaErr> {
+        let id = object_id as usize;
+        if id < self.objects.len() {
+            Ok(&mut self.objects[id])
+        } else {
+            Err(OmmaErr::new(&format!(
+                "invalid object_id {}, max is {}",
+                object_id,
+                self.objects.len() - 1,
+            )))
+        }
+    }
+
+    /// object_direct returns the object corresponding to object_id if available
+    pub fn object_direct(
+        objects: &mut Vec<Object>,
+        object_id: u32,
+    ) -> Result<&mut Object, OmmaErr> {
+        let id = object_id as usize;
+        if id < objects.len() {
+            Ok(&mut objects[id])
+        } else {
+            Err(OmmaErr::new(&format!(
+                "invalid object_id {}, max is {}",
+                object_id,
+                objects.len() - 1,
             )))
         }
     }
 
     /// render draws the current state of the session to the terminal
     pub fn render(&mut self) -> Result<u32, OmmaErr> {
-        let Self { term, windows, .. } = self;
+        let Self {
+            term,
+            objects,
+            windows,
+            ..
+        } = self;
         let window = &windows[0];
-        window.blit(windows, term, 0, 0)?;
+        window.blit(windows, objects, term, 0, 0)?;
         self.term.render()
     }
 

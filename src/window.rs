@@ -1,6 +1,7 @@
 use crate::border::OmmaBorder;
 use crate::cell::{BLANK_CELL, EMPTY_CELL, OmmaCell};
 use crate::error::OmmaErr;
+use crate::object::Object;
 use crate::pad::OmmaPad;
 use crate::session::Session;
 use crate::term::OmmaTerm;
@@ -11,6 +12,7 @@ pub struct Window {
     id: u32,
     parent_id: u32,
     children: Vec<u32>,
+    objects: Vec<u32>,
     name: String,
     offset_x: usize,
     offset_y: usize,
@@ -30,6 +32,7 @@ pub struct Window {
 pub struct WindowBuilder {
     parent_id: u32,
     name: Option<String>,
+    objects: Vec<u32>,
     offset_x: usize,
     offset_y: usize,
     width: usize,
@@ -50,6 +53,7 @@ impl WindowBuilder {
         WindowBuilder {
             parent_id: 0,
             name: None,
+            objects: Vec::new(),
             offset_x: 0,
             offset_y: 0,
             width,
@@ -156,6 +160,12 @@ impl WindowBuilder {
         self
     }
 
+    /// object
+    pub fn object(mut self, object: u32) -> Self {
+        self.objects.push(object);
+        self
+    }
+
     /// submit adds a WindowBuilder into the session as a new window, returns window id
     pub fn submit(&self, session: &mut Session) -> Result<u32, OmmaErr> {
         let id = crate::next_window_id()?;
@@ -171,6 +181,7 @@ impl WindowBuilder {
             name: name.to_string(),
             parent_id: self.parent_id,
             children: Vec::<u32>::new(),
+            objects: Vec::<u32>::new(),
             offset_x: self.offset_x,
             offset_y: self.offset_y,
             width: self.width,
@@ -199,7 +210,11 @@ impl WindowBuilder {
 impl std::fmt::Display for Window {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let visibility = if self.hidden { "H" } else { "V" };
-        write!(f, "{}:{}:{}", visibility, self.id, self.name)
+        write!(
+            f,
+            "{}:{}:{}:{}",
+            visibility, self.id, self.name, self.parent_id
+        )
     }
 }
 
@@ -319,6 +334,11 @@ impl Window {
         Ok(())
     }
 
+    /// add_object pushes an object id into the window's object list
+    pub(crate) fn add_object(&mut self, object_id: u32) {
+        self.objects.push(object_id);
+    }
+
     /// set_ommacell sets a location within the window to a selected ommacell
     pub fn set_ommacell(&mut self, x: usize, y: usize, ommacell: &OmmaCell) -> Result<(), OmmaErr> {
         if x >= self.width || y >= self.height {
@@ -354,6 +374,7 @@ impl Window {
     pub fn blit(
         &self,
         windows: &Vec<Window>,
+        objects: &mut Vec<Object>,
         term: &mut OmmaTerm,
         parent_offset_x: usize,
         parent_offset_y: usize,
@@ -379,6 +400,12 @@ impl Window {
                 for y in 0..c_height {
                     written += term.put_cell_at(x + offset_x, y + offset_y, &self.buffer[x][y])?;
                 }
+            }
+
+            // Search the list of child objects and draw them
+            for &object_id in &self.objects {
+                let object = Session::object_direct(objects, object_id)?;
+                object.blit(term, offset_x, offset_y)?;
             }
 
             // Blank pad
@@ -456,7 +483,8 @@ impl Window {
                     )));
                 }
             }
-            written += windows[*window_id as usize].blit(windows, term, offset_x, offset_y)?;
+            written +=
+                windows[*window_id as usize].blit(windows, objects, term, offset_x, offset_y)?;
         }
         Ok(written)
     }
