@@ -46,7 +46,7 @@ pub struct WindowBuilder {
 }
 
 impl WindowBuilder {
-    pub fn new(width: usize, height: usize) -> WindowBuilder {
+    pub fn new(width: usize, height: usize) -> Self {
         WindowBuilder {
             parent_id: 0,
             name: None,
@@ -67,7 +67,7 @@ impl WindowBuilder {
     }
 
     /// scroll sets the scrolling offset of the window
-    pub fn scroll(mut self, scroll_x: usize, scroll_y: usize) -> WindowBuilder {
+    pub fn scroll(mut self, scroll_x: usize, scroll_y: usize) -> Self {
         self.scroll_x = scroll_x;
         self.scroll_y = scroll_y;
         self
@@ -75,55 +75,50 @@ impl WindowBuilder {
 
     /// parent sets the window that owns this window. Omitting parent implicitly sets the parent to
     /// the System Window.
-    pub fn parent(mut self, parent_id: u32) -> WindowBuilder {
+    pub fn parent(mut self, parent_id: u32) -> Self {
         self.parent_id = parent_id;
         self
     }
 
     /// offset sets the windows offset within the parent
-    pub fn offset(mut self, offset_x: usize, offset_y: usize) -> WindowBuilder {
+    pub fn offset(mut self, offset_x: usize, offset_y: usize) -> Self {
         self.offset_x = offset_x;
         self.offset_y = offset_y;
         self
     }
 
     /// fill fills the entire window with a given ommacell
-    pub fn fill(mut self, fill: &OmmaCell) -> WindowBuilder {
+    pub fn fill(mut self, fill: &OmmaCell) -> Self {
         self.fill = Some(fill.clone());
         self
     }
 
     /// name sets a name for the window
-    pub fn name(mut self, name: String) -> WindowBuilder {
+    pub fn name(mut self, name: String) -> Self {
         self.name = Some(name);
         self
     }
 
     /// border sets a border for the window
-    pub fn border(mut self, border: &OmmaBorder) -> WindowBuilder {
+    pub fn border(mut self, border: &OmmaBorder) -> Self {
         self.border = Some(border.clone());
         self
     }
 
     /// border_raw takes 3 ommacells and uses it as a horiz, vert, corner border for the window
-    pub fn border_raw(
-        mut self,
-        horiz: &OmmaCell,
-        vert: &OmmaCell,
-        corner: &OmmaCell,
-    ) -> WindowBuilder {
+    pub fn border_raw(mut self, horiz: &OmmaCell, vert: &OmmaCell, corner: &OmmaCell) -> Self {
         self.border = Some(OmmaBorder::new(horiz, vert, corner));
         self
     }
 
     /// border_mono takes 1 ommacell and uses it for all sides and corner
-    pub fn border_mono(mut self, mono: &OmmaCell) -> WindowBuilder {
+    pub fn border_mono(mut self, mono: &OmmaCell) -> Self {
         self.border = Some(OmmaBorder::new_mono(mono));
         self
     }
 
     /// border_hidden marks a border as hidden and it will be skipped during rendering
-    pub fn border_hidden(mut self) -> WindowBuilder {
+    pub fn border_hidden(mut self) -> Self {
         if let Some(border) = &mut self.border {
             border.set_hidden();
         }
@@ -131,38 +126,32 @@ impl WindowBuilder {
     }
 
     /// pad sets a pad for the window
-    pub fn pad(mut self, pad: &OmmaPad) -> WindowBuilder {
+    pub fn pad(mut self, pad: &OmmaPad) -> Self {
         self.pad = pad.clone();
         self
     }
 
     /// pad_raw takes 4 usizes and uses it as a top bottom left right set of pad values
-    pub fn pad_raw(
-        mut self,
-        top: usize,
-        bottom: usize,
-        left: usize,
-        right: usize,
-    ) -> WindowBuilder {
+    pub fn pad_raw(mut self, top: usize, bottom: usize, left: usize, right: usize) -> Self {
         self.pad = OmmaPad::new(top, bottom, left, right);
         self
     }
 
     /// pad_mono takes 1 usize and uses it as a for all pad values
-    pub fn pad_mono(mut self, mono: usize) -> WindowBuilder {
+    pub fn pad_mono(mut self, mono: usize) -> Self {
         self.pad = OmmaPad::new(mono, mono, mono, mono);
         self
     }
 
     /// hidden marks a window as hidden and it will be skipped during rendering
-    pub fn hidden(mut self) -> WindowBuilder {
+    pub fn hidden(mut self) -> Self {
         self.hidden = true;
         self
     }
 
     /// virt marks a window as virtual. Virtual windows are not rendered but can be used to group
     /// them as an object
-    pub fn virt(mut self) -> WindowBuilder {
+    pub fn virt(mut self) -> Self {
         self.virt = true;
         self
     }
