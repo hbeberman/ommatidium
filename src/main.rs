@@ -1,3 +1,4 @@
+use ommatidium::border::*;
 use ommatidium::cell::*;
 use ommatidium::color::{BLACK, BLUE, DARK_GREY, GREEN, RED};
 use ommatidium::error::OmmaErr;
@@ -53,7 +54,7 @@ fn hello() -> Result<(), OmmaErr> {
         .new_window(25, 9)
         .offset(11, 3)
         .fill(&blank_black)
-        .border_mono(&SPECIAL_CELL)
+        .border(&BOX_HOLLOW_BORDER)
         .pad_mono(2)
         .submit(&mut session)?;
     let window = session.window(id_dialog)?;

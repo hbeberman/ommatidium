@@ -434,6 +434,7 @@ impl Window {
             }
 
             // Draw border
+            // TODO: stash this in border code so we can just do a border.blit
             if let Some(border) = &self.border
                 && !border.hidden()
             {
@@ -454,21 +455,21 @@ impl Window {
                     )?;
                 }
 
-                term.put_cell_at(window_offset_x, window_offset_y, border.border_corner())?;
+                term.put_cell_at(window_offset_x, window_offset_y, border.border_corner_tl())?;
                 term.put_cell_at(
                     window_offset_x,
                     self.view_height + window_offset_y - 1,
-                    border.border_corner(),
+                    border.border_corner_bl(),
                 )?;
                 term.put_cell_at(
                     self.view_width + window_offset_x - 1,
                     window_offset_y,
-                    border.border_corner(),
+                    border.border_corner_tr(),
                 )?;
                 term.put_cell_at(
                     self.view_width + window_offset_x - 1,
                     self.view_height + window_offset_y - 1,
-                    border.border_corner(),
+                    border.border_corner_br(),
                 )?;
             }
         }

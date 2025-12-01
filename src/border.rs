@@ -1,4 +1,4 @@
-use crate::cell::OmmaCell;
+use crate::cell::*;
 
 #[derive(Default, Clone)]
 #[allow(dead_code)]
@@ -8,7 +8,10 @@ pub struct OmmaBorder {
     border_bottom: OmmaCell,
     border_left: OmmaCell,
     border_right: OmmaCell,
-    border_corner: OmmaCell,
+    border_corner_tl: OmmaCell,
+    border_corner_tr: OmmaCell,
+    border_corner_bl: OmmaCell,
+    border_corner_br: OmmaCell,
 }
 
 impl OmmaBorder {
@@ -20,7 +23,10 @@ impl OmmaBorder {
             border_bottom: horiz.clone(),
             border_left: vert.clone(),
             border_right: vert.clone(),
-            border_corner: corner.clone(),
+            border_corner_tl: corner.clone(),
+            border_corner_tr: corner.clone(),
+            border_corner_bl: corner.clone(),
+            border_corner_br: corner.clone(),
         }
     }
 
@@ -32,7 +38,10 @@ impl OmmaBorder {
             border_bottom: mono.clone(),
             border_left: mono.clone(),
             border_right: mono.clone(),
-            border_corner: mono.clone(),
+            border_corner_tl: mono.clone(),
+            border_corner_tr: mono.clone(),
+            border_corner_bl: mono.clone(),
+            border_corner_br: mono.clone(),
         }
     }
 
@@ -52,8 +61,17 @@ impl OmmaBorder {
     pub fn border_right(&self) -> &OmmaCell {
         &self.border_right
     }
-    pub fn border_corner(&self) -> &OmmaCell {
-        &self.border_corner
+    pub fn border_corner_tl(&self) -> &OmmaCell {
+        &self.border_corner_tl
+    }
+    pub fn border_corner_tr(&self) -> &OmmaCell {
+        &self.border_corner_tr
+    }
+    pub fn border_corner_bl(&self) -> &OmmaCell {
+        &self.border_corner_bl
+    }
+    pub fn border_corner_br(&self) -> &OmmaCell {
+        &self.border_corner_br
     }
 
     // Setters
@@ -69,3 +87,15 @@ impl OmmaBorder {
         self.hidden = false
     }
 }
+
+pub const BOX_HOLLOW_BORDER: OmmaBorder = OmmaBorder {
+    hidden: false,
+    border_top: BOX_HORIZ_HOLLOW_CELL,
+    border_bottom: BOX_HORIZ_HOLLOW_CELL,
+    border_left: BOX_VERT_HOLLOW_CELL,
+    border_right: BOX_VERT_HOLLOW_CELL,
+    border_corner_tl: BOX_CORNER_TL_HOLLOW_CELL,
+    border_corner_tr: BOX_CORNER_TR_HOLLOW_CELL,
+    border_corner_bl: BOX_CORNER_BL_HOLLOW_CELL,
+    border_corner_br: BOX_CORNER_BR_HOLLOW_CELL,
+};

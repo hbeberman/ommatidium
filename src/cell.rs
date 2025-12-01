@@ -98,3 +98,38 @@ pub const SPECIAL_CELL: OmmaCell = OmmaCell {
     ch: '*',
     ..DEFAULT_CELL
 };
+
+pub const BOX_VERT_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '║',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_HORIZ_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '═',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_CORNER_TL_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '╔',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_CORNER_TR_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '╗',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_CORNER_BL_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '╚',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_CORNER_BR_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '╝',
+    ..DEFAULT_CELL
+};
+
+pub const BOX_CORNER_ALL_HOLLOW_CELL: OmmaCell = OmmaCell {
+    ch: '╬',
+    ..DEFAULT_CELL
+};
